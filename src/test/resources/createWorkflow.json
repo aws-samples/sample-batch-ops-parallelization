@@ -1,0 +1,34 @@
+{
+  "resource": "/createWorkflow",
+  "path": "/createWorkflow",
+  "httpMethod": "POST",
+  "multiValueHeaders": {
+    "Content-Type": [
+      "application/x-amz-json-1.1"
+    ]
+  },
+  "multiValueQueryStringParameters": null,
+  "pathParameters": null,
+  "stageVariables": null,
+  "requestContext": {
+    "accountId": "12345678912",
+    "apiId": "MAGICID",
+    "httpMethod": "POST",
+    "identity": {
+      "accessKey": "MAGICKEY",
+      "accountId": "12345678912",
+      "caller": "SOME_CALLER",
+      "user": "SOME_USER",
+      "userAgent": "SOME_AGENT",
+      "userArn": "arn:aws:sts::12345678912:assumed-role/BONESBootstrapHydra-MyTestLambda/CODETEST_MyTestLambda_0678761137",
+      "sourceIp": "0.0.0.0"
+    },
+    "path": "/createWorkflow",
+    "requestId": "REQUEST_ID",
+    "resourceId": "RESOURCE_ID",
+    "resourcePath": "/createWorkflow",
+    "stage": "default"
+  },
+  "body": "{\"workflow\": {\"workflowID\":\"workflow2\",\"sourceBucketARN\":\"arn:aws:s3:::s3a-source-bucket1-yoan\",\"destBucketARN\":\"arn:aws:s3:::s3a-dest-bucket1-yoan\",\"namespaceID\":\"namespace21\",\"workflowName\":\"workflowName21\",\"workflowType\":\"workflowType1\",\"sourceRoleARN\":\"arn:aws:iam::666677778888:role/s3a-bucket-permissions\",\"destRoleARN\":\"arn:aws:iam::666677778888:role/s3a-bucket-permissions\",\"workflowConfig\":{\"work\":\"value\"},\"runtimeConfig\":{\"dashboardUrl\":\"https://console.aws.amazon.com/cloudwatch/home\",\"manifestLocation\":\"s3://manifest-bucket/manifest.json\",\"isReplicationTimeControlEnabled\":true},\"sourceAccountNumber\":\"666677778888\",\"destAccountNumber\":\"666677778888\",\"sourceRegion\":\"us-east-1\",\"destRegion\":\"us-west-2\",\"bopsJobID\":\"112\"}}",
+  "isBase64Encoded": false
+}

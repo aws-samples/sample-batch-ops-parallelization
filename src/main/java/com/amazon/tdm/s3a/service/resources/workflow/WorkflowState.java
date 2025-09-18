@@ -1,0 +1,16 @@
+package com.amazon.tdm.s3a.service.resources.workflow;
+
+public enum WorkflowState {
+    CONFIGURING_INVENTORY,
+    CONFIGURE_INVENTORY_FAILED,
+    AWAITING_MANIFEST,
+    AWAIT_MANIFEST_FAILED,
+    PROCESSING_INVENTORY,
+    PROCESS_INVENTORY_FAILED,
+    CANCELLED,
+    PAUSE_FAILED,
+    BOPS_NOT_STARTED,
+    BOPS_CANCELLING,
+    BOPS_CANCELLED
+}
+

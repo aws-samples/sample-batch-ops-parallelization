@@ -1,0 +1,40 @@
+stages:
+  - build
+  - deploy
+
+build:
+  stage: build
+  image: cimg/openjdk:17.0-node
+  variables:
+    AWS_CREDS_TARGET_ROLE: arn:aws:iam::111122223333:role/GitLabCDK
+    AWS_DEFAULT_REGION: us-east-1
+  before_script:
+    - cd lib
+    - npm install
+  script:
+    - npm run build 
+    - npx cdk synth
+  artifacts:
+    paths:
+      - $CI_PROJECT_DIR
+    exclude:
+      - $CI_PROJECT_DIR/lib/node_modules/**/*
+      - $CI_PROJECT_DIR/.git/**/*
+    when: always
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "main"'
+      when: always
+
+deploy:
+  stage: deploy
+  image:
+    name: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
+  variables:
+    AWS_CREDS_TARGET_ROLE: arn:aws:iam::111122223333:role/GitLabCDK
+    AWS_DEFAULT_REGION: us-east-1
+  script:
+    - zip -r s3aexternalization.zip .
+    - aws s3 cp . s3://s3a-externalization/cdk --recursive
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "main"'
+      when: always
