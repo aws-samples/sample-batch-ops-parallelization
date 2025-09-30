@@ -28,6 +28,7 @@ git clone git@ssh.code.aws.dev:proserve/s3ablog-parallel-bops/BOPSParallelizatio
 
 ## Deployment
 ```
+# Authenticate to your account
 ada credentials update --account=<AWS_ACCOUNT> --provider=Isengard --role=Admin --once
 
 cd lib
@@ -38,3 +39,6 @@ cdk list
 # Deploying the Service Stack deploys all other stacks (except the code pipeline)
 npx cdk deploy PipelineStack/S3AExternalization-dev/ServiceStack-<AWS_ACCOUNT>-us-west-2-dev
 ```
+
+### Issues
+- If you run into node libaries not found errors, remove your ```node_modules``` directory and try ```npm install```
