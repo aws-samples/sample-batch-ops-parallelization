@@ -28,8 +28,8 @@ import java.util.Optional;
 * S3A Monitoring Lambda.
 *
 */
-public class S3MonitorLambda implements RequestHandler<OrcaRequest, OrcaResponse> {
-    private static final Logger LOGGER = LogManager.getLogger(S3MonitorLambda.class);
+public class BOPSParallelMonitorLambda implements RequestHandler<OrcaRequest, OrcaResponse> {
+    private static final Logger LOGGER = LogManager.getLogger(BOPSParallelMonitorLambda.class);
     private final WorkflowRepository workflowRepository;
     private final S3MonitorManagerFactory monitorManagerFactory;
     private final CloudWatchDashboardManager cloudWatchDashboardManager;
@@ -41,7 +41,7 @@ public class S3MonitorLambda implements RequestHandler<OrcaRequest, OrcaResponse
     /**
      * Initializes CRUD layer and S3MonitorManagerFactory.
      */
-    public S3MonitorLambda() {
+    public BOPSParallelMonitorLambda() {
         LambdaComponent lambdaComponent = DaggerLambdaComponent.create();
         this.workflowRepository = lambdaComponent.getWorkflowRepository();
         this.monitorManagerFactory = lambdaComponent.getS3MonitorManagerFactory();
@@ -51,7 +51,7 @@ public class S3MonitorLambda implements RequestHandler<OrcaRequest, OrcaResponse
     }
 
     // for unit testing
-    S3MonitorLambda(final WorkflowRepository workflowRepository,
+    BOPSParallelMonitorLambda(final WorkflowRepository workflowRepository,
                     final S3MonitorManagerFactory monitorManagerFactory,
                     final CloudWatchDashboardManager cloudWatchDashboardManager,
                     final S3ClientFactory s3ClientFactory,

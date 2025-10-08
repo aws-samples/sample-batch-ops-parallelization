@@ -21,7 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mockStatic;
 
-class S3AcceleratorDashboardTest {
+class BOPSParallelDashboardTest {
 
     private WorkFlowModel workflowModel;
     private Instant fixedNowInstant;
