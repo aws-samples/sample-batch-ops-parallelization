@@ -4,18 +4,18 @@ import com.amazon.bopspar.persistence.manager.WorkflowStatus;
 import com.amazon.bopspar.persistence.model.RuntimeConfig;
 import com.amazon.bopspar.service.dagger.DaggerLambdaComponent;
 import com.amazon.bopspar.service.dagger.LambdaComponent;
-import com.amazon.bopspar.service.requests.OrcaRequest;
-import com.amazon.bopspar.service.responses.OrcaResponse;
+import com.amazon.bopspar.service.requests.WorkflowRequest;
+import com.amazon.bopspar.service.responses.WorkflowResponse;
 import com.amazon.bopspar.service.resources.s3.bucket.S3CreateBucketService;
 import com.amazon.bopspar.service.resources.s3.inventoryreportconfig.S3InventoryReportConfigServiceUtils;
 import com.amazon.bopspar.service.resources.s3.inventoryreportconfig.S3InventoryReportConfigService;
 import com.amazon.bopspar.service.resources.workflow.WorkflowState;
 import com.amazon.bopspar.persistence.ddb.WorkflowRepository;
 import com.amazon.bopspar.persistence.model.WorkFlowModel;
-import com.amazon.bopspar.service.validator.OrcaRequestValidator;
+import com.amazon.bopspar.service.validator.WorkflowRequestValidator;
 import com.amazon.bopspar.service.validator.WorkflowValidator;
 import com.amazonaws.services.lambda.runtime.Context;
-import com.amazon.bopspar.service.responses.OrcaResponseBuilder;
+import com.amazon.bopspar.service.responses.WorkflowResponseBuilder;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,9 +34,9 @@ import software.amazon.awssdk.services.s3.S3Client;
 
 /**
  * Lambda handler for setting up S3 inventory report configuration on customer source buckets.
- * This class implements the AWS Lambda RequestHandler interface to process OrcaRequest events.
+ * This class implements the AWS Lambda RequestHandler interface to process WorkflowRequest events.
  */
-public class S3InventoryConfigSetupLambda implements RequestHandler<OrcaRequest, OrcaResponse> {
+public class S3InventoryConfigSetupLambda implements RequestHandler<WorkflowRequest, WorkflowResponse> {
 
     private static final Logger LOGGER = LogManager.getLogger(S3InventoryConfigSetupLambda.class);
     private static final String S3_INVENTORY_REPORTS_BUCKET_NAME_PREFIX = "s3a-migration-reports-bucket";
@@ -73,20 +73,20 @@ public class S3InventoryConfigSetupLambda implements RequestHandler<OrcaRequest,
      *  Handles creation of S3 inventory report config for customer source bucket
      *  First it will check the number of objects in the source bucket using CloudWatch.
      *  Then we have 2 scenarios:
-     *  1) If the number of objects is less than 1 billion than we return FINISHED status to the Orca workflow
+     *  1) If the number of objects is less than 1 billion than we return FINISHED status to the Workflow workflow
      *  and continue to the normal workflow.
      *  2) If the number of objects is more than 1 billion,then we create the inventory reports bucket and attach
      *  the bucket policy to the bucket for the inventory report config and the glue job role.
-     *  Then we return RUNNING status to the Orca workflow.
-     * @param orcaRequest Contains workflow name and namespaceID
-     * @return OrcaResponse success/failure message
+     *  Then we return RUNNING status to the Workflow workflow.
+     * @param workflowRequest Contains workflow name and namespaceID
+     * @return WorkflowResponse success/failure message
      */
     @Override
-    public OrcaResponse handleRequest(final OrcaRequest orcaRequest, final Context context) {
-        OrcaRequestValidator.validateOrcaRequest(orcaRequest);
-        final String workflowName = orcaRequest.getWorkflowName();
-        final String namespaceID = orcaRequest.getNamespaceID();
-        LOGGER.info("Orca Request: {} {}", workflowName, namespaceID);
+    public WorkflowResponse handleRequest(final WorkflowRequest workflowRequest, final Context context) {
+        WorkflowRequestValidator.validateWorkflowRequest(workflowRequest);
+        final String workflowName = workflowRequest.getWorkflowName();
+        final String namespaceID = workflowRequest.getNamespaceID();
+        LOGGER.info("Workflow Request: {} {}", workflowName, namespaceID);
 
         WorkFlowModel workflowDetails = workflowRepository.getWorkflow(workflowName, namespaceID);
         WorkflowValidator.validateWorkflowArns(workflowDetails);
@@ -117,7 +117,7 @@ public class S3InventoryConfigSetupLambda implements RequestHandler<OrcaRequest,
                     .getNumberOfObjectsForBucketViaCloudWatch(sourceRegionCloudWatchClient, sourceBucketArn);
 
             if (numberOfObjectsInSourceBucket < ONE_BILLION) {
-                return OrcaResponseBuilder.buildSuccessResponse(workflowDetails, WorkflowStatus.FINISHED);
+                return WorkflowResponseBuilder.buildSuccessResponse(workflowDetails, WorkflowStatus.FINISHED);
             }
 
             final String glueJobRoleArn = String.format(
@@ -149,15 +149,15 @@ public class S3InventoryConfigSetupLambda implements RequestHandler<OrcaRequest,
             workflowDetails.setState(WorkflowState.CONFIGURING_INVENTORY.name());
             workflowRepository.updateWorkflow(workflowDetails);
 
-            return OrcaResponseBuilder.buildSuccessResponse(workflowDetails, WorkflowStatus.RUNNING);
+            return WorkflowResponseBuilder.buildSuccessResponse(workflowDetails, WorkflowStatus.RUNNING);
         } catch (AwsServiceException awsServiceException) {
             LOGGER.error("Exception {} setting up inventory config for workflow: {}, namespaceId: {}",
                     awsServiceException.getClass().getName(), workflowName, namespaceID, awsServiceException);
             workflowDetails.setState(WorkflowState.CONFIGURE_INVENTORY_FAILED.name());
             workflowDetails.setStatus(String.valueOf(WorkflowStatus.FAILED));
             workflowRepository.updateWorkflow(workflowDetails);
-            // Send Failed Orca Response
-            return OrcaResponseBuilder.buildServiceErrorResponse(workflowDetails,
+            // Send Failed Workflow Response
+            return WorkflowResponseBuilder.buildServiceErrorResponse(workflowDetails,
                     WorkflowStatus.FAILED, awsServiceException);
         } catch (RuntimeException runtimeException) {
             LOGGER.error("Error setting up inventory config for workflow: {}, namespaceId: {}",
@@ -165,8 +165,8 @@ public class S3InventoryConfigSetupLambda implements RequestHandler<OrcaRequest,
             workflowDetails.setState(WorkflowState.CONFIGURE_INVENTORY_FAILED.name());
             workflowDetails.setStatus(String.valueOf(WorkflowStatus.FAILED));
             workflowRepository.updateWorkflow(workflowDetails);
-            // Send Failed Orca Response
-            return OrcaResponseBuilder.buildRuntimeErrorResponse(workflowDetails,
+            // Send Failed Workflow Response
+            return WorkflowResponseBuilder.buildRuntimeErrorResponse(workflowDetails,
                     WorkflowStatus.FAILED, runtimeException);
         }
     }

@@ -102,7 +102,7 @@ public class CrrMonitorManager {
         Dimension ruleDim = Dimension.builder().name("RuleId").value(replicationRuleId).build();
         Collection<Dimension> dims = new ArrayList<>(List.of(srcBucketDim, destBucketDim, ruleDim));
 
-        // To break out metrics by specific dimensions not natively supported by ORCA
+        // To break out metrics by specific dimensions not natively supported by Workflow
         GetMetricStatisticsRequest metricsRequest = GetMetricStatisticsRequest.builder()
                 .metricName(metricName)
                 .namespace("AWS/S3")

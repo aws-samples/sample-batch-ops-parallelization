@@ -5,14 +5,14 @@ import com.amazon.bopspar.service.dagger.DaggerLambdaComponent;
 import com.amazon.bopspar.persistence.ddb.WorkflowRepository;
 import com.amazon.bopspar.persistence.model.WorkFlowModel;
 import com.amazon.bopspar.service.dagger.LambdaComponent;
+import com.amazon.bopspar.service.requests.WorkflowRequest;
 import com.amazon.bopspar.service.resources.auth.S3ClientFactory;
 import com.amazon.bopspar.service.resources.s3.bucket.S3CreateBucketService;
 import com.amazon.bopspar.service.resources.s3.inventoryreportconfig.S3InventoryReportConfigService;
 import com.amazon.bopspar.service.resources.workflow.WorkflowState;
-import com.amazon.bopspar.service.requests.OrcaRequest;
-import com.amazon.bopspar.service.responses.OrcaResponse;
-import com.amazon.bopspar.service.responses.OrcaResponseBuilder;
-import com.amazon.bopspar.service.validator.OrcaRequestValidator;
+import com.amazon.bopspar.service.responses.WorkflowResponse;
+import com.amazon.bopspar.service.responses.WorkflowResponseBuilder;
+import com.amazon.bopspar.service.validator.WorkflowRequestValidator;
 import com.amazon.bopspar.service.validator.WorkflowValidator;
 import com.amazonaws.arn.Arn;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -30,7 +30,7 @@ import java.util.Optional;
 /**
  * Handles the lambda request to poll for S3 inventory manifest files.
  */
-public class S3PollManifestLambda implements RequestHandler<OrcaRequest, OrcaResponse> {
+public class S3PollManifestLambda implements RequestHandler<WorkflowRequest, WorkflowResponse> {
 
     private static final Logger LOGGER = LogManager.getLogger(S3PollManifestLambda.class);
     private static final String S3A_GLUE_JOB_ROLE_NAME = "s3a-cross-account-glue-job-role";
@@ -62,11 +62,11 @@ public class S3PollManifestLambda implements RequestHandler<OrcaRequest, OrcaRes
     }
 
     @Override
-    public OrcaResponse handleRequest(final OrcaRequest orcaRequest, final Context context) {
-        OrcaRequestValidator.validateOrcaRequest(orcaRequest);
-        final String workflowName = orcaRequest.getWorkflowName();
-        final String namespaceID = orcaRequest.getNamespaceID();
-        LOGGER.info("Orca Request: {} {}", workflowName, namespaceID);
+    public WorkflowResponse handleRequest(final WorkflowRequest workflowRequest, final Context context) {
+        WorkflowRequestValidator.validateWorkflowRequest(workflowRequest);
+        final String workflowName = workflowRequest.getWorkflowName();
+        final String namespaceID = workflowRequest.getNamespaceID();
+        LOGGER.info("Workflow Request: {} {}", workflowName, namespaceID);
 
         final WorkFlowModel workflowDetails = workflowRepository.getWorkflow(workflowName, namespaceID);
         WorkflowValidator.validateWorkflowArns(workflowDetails);
@@ -92,9 +92,9 @@ public class S3PollManifestLambda implements RequestHandler<OrcaRequest, OrcaRes
             );
 
             if (findManifestAndUpdateStatus(listResponse, workflowDetails, inventoryReportBucketName)) {
-                return OrcaResponseBuilder.buildSuccessResponse(workflowDetails, WorkflowStatus.FINISHED);
+                return WorkflowResponseBuilder.buildSuccessResponse(workflowDetails, WorkflowStatus.FINISHED);
             } else {
-                return OrcaResponseBuilder.buildSuccessResponse(workflowDetails, WorkflowStatus.RUNNING);
+                return WorkflowResponseBuilder.buildSuccessResponse(workflowDetails, WorkflowStatus.RUNNING);
             }
         } catch (AwsServiceException awsServiceException) {
             LOGGER.error("Exception {} polling inventory reports bucket for workflow: {}, namespaceId: {}",
@@ -102,8 +102,8 @@ public class S3PollManifestLambda implements RequestHandler<OrcaRequest, OrcaRes
             workflowDetails.setState(WorkflowState.AWAIT_MANIFEST_FAILED.name());
             workflowDetails.setStatus(String.valueOf(WorkflowStatus.FAILED));
             workflowRepository.updateWorkflow(workflowDetails);
-            // Send Failed Orca Response
-            return OrcaResponseBuilder.buildServiceErrorResponse(workflowDetails,
+            // Send Failed Workflow Response
+            return WorkflowResponseBuilder.buildServiceErrorResponse(workflowDetails,
                     WorkflowStatus.FAILED, awsServiceException);
         } catch (RuntimeException runtimeException) {
             LOGGER.error("Error polling inventory reports bucket for workflow: {}, namespaceId: {}",
@@ -111,8 +111,8 @@ public class S3PollManifestLambda implements RequestHandler<OrcaRequest, OrcaRes
             workflowDetails.setState(WorkflowState.AWAIT_MANIFEST_FAILED.name());
             workflowDetails.setStatus(String.valueOf(WorkflowStatus.FAILED));
             workflowRepository.updateWorkflow(workflowDetails);
-            // Send Failed Orca Response
-            return OrcaResponseBuilder.buildRuntimeErrorResponse(workflowDetails,
+            // Send Failed Workflow Response
+            return WorkflowResponseBuilder.buildRuntimeErrorResponse(workflowDetails,
                     WorkflowStatus.FAILED, runtimeException);
         }
     }

@@ -5,12 +5,12 @@ import com.amazon.bopspar.persistence.manager.WorkflowStatus;
 import com.amazon.bopspar.persistence.ddb.WorkflowRepository;
 import com.amazon.bopspar.persistence.model.RuntimeConfig;
 import com.amazon.bopspar.persistence.model.WorkFlowModel;
-import com.amazon.bopspar.service.requests.OrcaRequest;
+import com.amazon.bopspar.service.requests.WorkflowRequest;
 import com.amazon.bopspar.service.resources.auth.S3ClientFactory;
 import com.amazon.bopspar.service.resources.replication.S3ReplicationConfigurator;
 import com.amazon.bopspar.service.resources.workflow.WorkflowStatusManager;
-import com.amazon.bopspar.service.responses.OrcaResponse;
-import com.amazon.bopspar.service.responses.OrcaResponseBuilder;
+import com.amazon.bopspar.service.responses.WorkflowResponse;
+import com.amazon.bopspar.service.responses.WorkflowResponseBuilder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,16 +72,16 @@ class S3ReplicationSetupLambdaTest {
     @InjectMocks
     private S3ReplicationSetupLambda lambda;
 
-    private OrcaRequest orcaRequest;
+    private WorkflowRequest workflowRequest;
 
     private static final String BOPS_ROLE_NAME = "s3a-bops-permissions";
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        orcaRequest = new OrcaRequest();
-        orcaRequest.setWorkflowName("testWorkflow");
-        orcaRequest.setNamespaceID("testNamespace");
+        workflowRequest = new WorkflowRequest();
+        workflowRequest.setWorkflowName("testWorkflow");
+        workflowRequest.setNamespaceID("testNamespace");
     }
 
     @Test
@@ -93,42 +93,42 @@ class S3ReplicationSetupLambdaTest {
 
     @Test
     void testHandleRequest_InvalidInput_ThrowsInvalidInputException_NullWorkflowName() {
-        // Given: OrcaRequest with null workflow name
-        OrcaRequest orcaRequest = new OrcaRequest();
-        orcaRequest.setWorkflowName(null);
-        orcaRequest.setNamespaceID("validNamespace");
+        // Given: WorkflowRequest with null workflow name
+        WorkflowRequest workflowRequest = new WorkflowRequest();
+        workflowRequest.setWorkflowName(null);
+        workflowRequest.setNamespaceID("validNamespace");
 
         // When & Then: Expect InvalidInputException to be thrown
         InvalidInputException thrown = assertThrows(InvalidInputException.class, () ->
-                lambda.handleRequest(orcaRequest, null));
+                lambda.handleRequest(workflowRequest, null));
 
         assertEquals("Invalid input! WorkflowName and NamespaceID are required.", thrown.getMessage());
     }
 
     @Test
     void testHandleRequest_InvalidInput_ThrowsInvalidInputException_NullNamespaceID() {
-        // Given: OrcaRequest with null namespace ID
-        OrcaRequest orcaRequest = new OrcaRequest();
-        orcaRequest.setWorkflowName("validWorkflow");
-        orcaRequest.setNamespaceID(null);
+        // Given: WorkflowRequest with null namespace ID
+        WorkflowRequest workflowRequest = new WorkflowRequest();
+        workflowRequest.setWorkflowName("validWorkflow");
+        workflowRequest.setNamespaceID(null);
 
         // When & Then: Expect InvalidInputException to be thrown
         InvalidInputException thrown = assertThrows(InvalidInputException.class, () ->
-                lambda.handleRequest(orcaRequest, null));
+                lambda.handleRequest(workflowRequest, null));
 
         assertEquals("Invalid input! WorkflowName and NamespaceID are required.", thrown.getMessage());
     }
 
     @Test
     void testHandleRequest_InvalidInput_ThrowsInvalidInputException_EmptyValues() {
-        // Given: OrcaRequest with empty workflow name and namespace ID
-        OrcaRequest orcaRequest = new OrcaRequest();
-        orcaRequest.setWorkflowName("");
-        orcaRequest.setNamespaceID("");
+        // Given: WorkflowRequest with empty workflow name and namespace ID
+        WorkflowRequest workflowRequest = new WorkflowRequest();
+        workflowRequest.setWorkflowName("");
+        workflowRequest.setNamespaceID("");
 
         // When & Then: Expect InvalidInputException to be thrown
         InvalidInputException thrown = assertThrows(InvalidInputException.class, () ->
-                lambda.handleRequest(orcaRequest, null));
+                lambda.handleRequest(workflowRequest, null));
 
         assertEquals("Invalid input! WorkflowName and NamespaceID are required.", thrown.getMessage());
     }
@@ -136,14 +136,14 @@ class S3ReplicationSetupLambdaTest {
     // Optionally, you can also test both values being null or empty
     @Test
     void testHandleRequest_InvalidInput_ThrowsInvalidInputException_NullValues() {
-        // Given: OrcaRequest with null values
-        OrcaRequest orcaRequest = new OrcaRequest();
-        orcaRequest.setWorkflowName(null);
-        orcaRequest.setNamespaceID(null);
+        // Given: WorkflowRequest with null values
+        WorkflowRequest workflowRequest = new WorkflowRequest();
+        workflowRequest.setWorkflowName(null);
+        workflowRequest.setNamespaceID(null);
 
         // When & Then: Expect InvalidInputException to be thrown
         InvalidInputException thrown = assertThrows(InvalidInputException.class, () ->
-                lambda.handleRequest(orcaRequest, null));
+                lambda.handleRequest(workflowRequest, null));
 
         assertEquals("Invalid input! WorkflowName and NamespaceID are required.", thrown.getMessage());
     }
@@ -213,7 +213,7 @@ class S3ReplicationSetupLambdaTest {
                 .thenReturn(encryptionResponse);
 
         // Then: Execute the lambda handler
-        OrcaResponse result = lambda.handleRequest(orcaRequest, null);
+        WorkflowResponse result = lambda.handleRequest(workflowRequest, null);
         assertEquals("FINISHED", result.getStatus());
 
         // Verify all interactions
@@ -300,7 +300,7 @@ class S3ReplicationSetupLambdaTest {
                 .thenReturn(encryptionResponse);
 
         // Then: Execute the lambda handler
-        OrcaResponse result = lambda.handleRequest(orcaRequest, null);
+        WorkflowResponse result = lambda.handleRequest(workflowRequest, null);
         assertEquals("FINISHED", result.getStatus());
 
         // Verify all interactions
@@ -365,7 +365,7 @@ class S3ReplicationSetupLambdaTest {
                 .thenReturn(mockJobResponse);
 
         // Then: Execute the lambda handler
-        OrcaResponse result = lambda.handleRequest(orcaRequest, null);
+        WorkflowResponse result = lambda.handleRequest(workflowRequest, null);
         assertEquals("FINISHED", result.getStatus());
 
         // Verify all interactions
@@ -420,7 +420,7 @@ class S3ReplicationSetupLambdaTest {
                 .setupLiveReplication(any(WorkFlowModel.class), any(S3Client.class), any(S3Client.class), any(String.class));
 
         // Then: Execute the lambda handler and check for failure response
-        OrcaResponse result = lambda.handleRequest(orcaRequest, null);
+        WorkflowResponse result = lambda.handleRequest(workflowRequest, null);
         assertEquals("FAILED", result.getStatus());
 
         // Verify interactions
@@ -448,7 +448,7 @@ class S3ReplicationSetupLambdaTest {
                 eq(workflowDetails.getSourceRegion())
         )).thenThrow(AwsServiceException.class);
 
-        OrcaResponse result = lambda.handleRequest(orcaRequest, null);
+        WorkflowResponse result = lambda.handleRequest(workflowRequest, null);
 
         assertEquals(String.valueOf(WorkflowStatus.FAILED), result.getStatus());
         verify(workflowRepository, times(1))
@@ -466,18 +466,18 @@ class S3ReplicationSetupLambdaTest {
 
     @Test
     void testHandleRequest_StoppingWorkflow() {
-        OrcaRequest orcaRequest = new OrcaRequest();
-        orcaRequest.setWorkflowName("testWorkflow");
-        orcaRequest.setNamespaceID("testNamespace");
+        WorkflowRequest workflowRequest = new WorkflowRequest();
+        workflowRequest.setWorkflowName("testWorkflow");
+        workflowRequest.setNamespaceID("testNamespace");
 
         WorkFlowModel workflowDetails = createValidWorkFlowModel();
         workflowDetails.setStatus(WorkflowStatus.STOPPING.name());
 
         when(workflowRepository.getWorkflow("testWorkflow", "testNamespace")).thenReturn(workflowDetails);
         when(workflowStatusManager.handleStoppingStatus(workflowDetails)).thenReturn(
-                OrcaResponseBuilder.buildSuccessResponse(workflowDetails, WorkflowStatus.STOPPED));
+                WorkflowResponseBuilder.buildSuccessResponse(workflowDetails, WorkflowStatus.STOPPED));
 
-        OrcaResponse response = assertDoesNotThrow(() -> lambda.handleRequest(orcaRequest, null));
+        WorkflowResponse response = assertDoesNotThrow(() -> lambda.handleRequest(workflowRequest, null));
 
         verify(workflowRepository, times(1)).getWorkflow("testWorkflow", "testNamespace");
         verify(workflowStatusManager, times(1)).handleStoppingStatus(workflowDetails);

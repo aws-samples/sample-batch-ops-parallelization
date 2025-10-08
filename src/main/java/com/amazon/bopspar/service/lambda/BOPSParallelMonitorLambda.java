@@ -6,15 +6,15 @@ import com.amazon.bopspar.persistence.model.RuntimeConfig;
 import com.amazon.bopspar.persistence.model.WorkFlowModel;
 import com.amazon.bopspar.service.dagger.DaggerLambdaComponent;
 import com.amazon.bopspar.service.dagger.LambdaComponent;
-import com.amazon.bopspar.service.requests.OrcaRequest;
+import com.amazon.bopspar.service.requests.WorkflowRequest;
 import com.amazon.bopspar.service.resources.auth.S3ClientFactory;
 import com.amazon.bopspar.service.resources.monitor.S3MonitorManager;
 import com.amazon.bopspar.service.resources.monitor.S3MonitorManagerFactory;
 import com.amazon.bopspar.service.resources.monitor.dashboard.CloudWatchDashboardManager;
 import com.amazon.bopspar.service.resources.workflow.WorkflowStatusManager;
-import com.amazon.bopspar.service.responses.OrcaResponse;
-import com.amazon.bopspar.service.responses.OrcaResponseBuilder;
-import com.amazon.bopspar.service.validator.OrcaRequestValidator;
+import com.amazon.bopspar.service.responses.WorkflowResponse;
+import com.amazon.bopspar.service.responses.WorkflowResponseBuilder;
+import com.amazon.bopspar.service.validator.WorkflowRequestValidator;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import org.apache.logging.log4j.LogManager;
@@ -28,7 +28,7 @@ import java.util.Optional;
 * S3A Monitoring Lambda.
 *
 */
-public class BOPSParallelMonitorLambda implements RequestHandler<OrcaRequest, OrcaResponse> {
+public class BOPSParallelMonitorLambda implements RequestHandler<WorkflowRequest, WorkflowResponse> {
     private static final Logger LOGGER = LogManager.getLogger(BOPSParallelMonitorLambda.class);
     private final WorkflowRepository workflowRepository;
     private final S3MonitorManagerFactory monitorManagerFactory;
@@ -70,18 +70,18 @@ public class BOPSParallelMonitorLambda implements RequestHandler<OrcaRequest, Or
      *  3. Use S3MonitorManager to perform the BOPS and CRR checks
      *  4. Update workflow details using CRUD
      *  5. Return a proper response (success/failure)
-     * @param orcaRequest Contains workflow name and namespaceID
+     * @param workflowRequest Contains workflow name and namespaceID
      * @return success/error response
      */
     @Override
-    public OrcaResponse handleRequest(final OrcaRequest orcaRequest, final Context context) {
+    public WorkflowResponse handleRequest(final WorkflowRequest workflowRequest, final Context context) {
         LOGGER.info(BOPS_MONITOR_VERSION);
         // IMPORTANT: For the lambda to be able to make the S3 SDK calls, the lambda role needs iam:PassRole
         // on the source or target account roles
         // and the source/target roles need a policy to allow S3 and lambda ops with the lambda role as principal
-        OrcaRequestValidator.validateOrcaRequest(orcaRequest);
-        final String workflowName = orcaRequest.getWorkflowName();
-        final String namespaceID = orcaRequest.getNamespaceID();
+        WorkflowRequestValidator.validateWorkflowRequest(workflowRequest);
+        final String workflowName = workflowRequest.getWorkflowName();
+        final String namespaceID = workflowRequest.getNamespaceID();
 
         //Check initial monitoring status
         WorkFlowModel workflowModel = workflowRepository.getWorkflow(workflowName, namespaceID);
@@ -89,7 +89,7 @@ public class BOPSParallelMonitorLambda implements RequestHandler<OrcaRequest, Or
             workflowModel.toString());
 
         if (!workflowStatusManager.shouldContinueMonitoring(workflowModel)) {
-            return OrcaResponseBuilder.buildSuccessResponse(workflowModel,
+            return WorkflowResponseBuilder.buildSuccessResponse(workflowModel,
                     WorkflowStatus.valueOf(workflowModel.getStatus()));
         }
 
@@ -131,19 +131,19 @@ public class BOPSParallelMonitorLambda implements RequestHandler<OrcaRequest, Or
             LOGGER.info("Workflow details to persist: {}", workflowModel.toString());
             workflowRepository.updateWorkflow(workflowModel);
 
-        } catch (Exception exception) {            
+        } catch (Exception exception) {
             // Catch all - because most service exceptions in the monitor are not rethrown
             LOGGER.error("Error monitoring workflow: {}, namespaceId: {}, ERROR: {}",
                 workflowName, namespaceID, exception);
             workflowModel.setStatus(String.valueOf(WorkflowStatus.FAILED));
             workflowRepository.updateWorkflow(workflowModel);
-            // Send Failed Orca Response
-            return OrcaResponseBuilder.buildRuntimeErrorResponse(workflowModel, 
-                    WorkflowStatus.FAILED, 
+            // Send Failed Workflow Response
+            return WorkflowResponseBuilder.buildRuntimeErrorResponse(workflowModel,
+                    WorkflowStatus.FAILED,
                     new RuntimeException(exception));
         }
 
-        return OrcaResponseBuilder.buildSuccessResponse(workflowModel,
+        return WorkflowResponseBuilder.buildSuccessResponse(workflowModel,
                 WorkflowStatus.valueOf(workflowModel.getStatus()));
     }
 }

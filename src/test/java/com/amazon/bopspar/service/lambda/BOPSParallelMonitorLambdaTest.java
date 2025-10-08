@@ -5,13 +5,13 @@ import com.amazon.bopspar.persistence.manager.WorkflowStatus;
 import com.amazon.bopspar.persistence.ddb.WorkflowRepository;
 import com.amazon.bopspar.persistence.model.MonitoringDetails;
 import com.amazon.bopspar.persistence.model.WorkFlowModel;
-import com.amazon.bopspar.service.requests.OrcaRequest;
+import com.amazon.bopspar.service.requests.WorkflowRequest;
 import com.amazon.bopspar.service.resources.auth.S3ClientFactory;
 import com.amazon.bopspar.service.resources.monitor.S3MonitorManager;
 import com.amazon.bopspar.service.resources.monitor.S3MonitorManagerFactory;
 import com.amazon.bopspar.service.resources.monitor.dashboard.CloudWatchDashboardManager;
 import com.amazon.bopspar.service.resources.workflow.WorkflowStatusManager;
-import com.amazon.bopspar.service.responses.OrcaResponse;
+import com.amazon.bopspar.service.responses.WorkflowResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -77,26 +77,26 @@ class BOPSParallelMonitorLambdaTest {
 
     @Test
     void testHandleRequest_MissingWorkflowName() {
-        OrcaRequest orcaRequest = new OrcaRequest();
-        orcaRequest.setWorkflowName(null); // Invalid input
-        orcaRequest.setNamespaceID("namespaceID");
+        WorkflowRequest workflowRequest = new WorkflowRequest();
+        workflowRequest.setWorkflowName(null); // Invalid input
+        workflowRequest.setNamespaceID("namespaceID");
 
-        assertThrows(InvalidInputException.class, () -> s3MonitorLambda.handleRequest(orcaRequest, null));
+        assertThrows(InvalidInputException.class, () -> s3MonitorLambda.handleRequest(workflowRequest, null));
     }
 
     @Test
     void testHandleRequest_MissingNamespaceID() {
-        OrcaRequest orcaRequest = new OrcaRequest();
-        orcaRequest.setWorkflowName("worflowName");
-        orcaRequest.setNamespaceID(null); // Invalid input
+        WorkflowRequest workflowRequest = new WorkflowRequest();
+        workflowRequest.setWorkflowName("worflowName");
+        workflowRequest.setNamespaceID(null); // Invalid input
 
-        assertThrows(InvalidInputException.class, () -> s3MonitorLambda.handleRequest(orcaRequest, null));
+        assertThrows(InvalidInputException.class, () -> s3MonitorLambda.handleRequest(workflowRequest, null));
     }
 
     @Test
     void testHandleRequest_NullInput() {
-        OrcaRequest orcaRequest = null;
-        assertThrows(NullPointerException.class, () -> s3MonitorLambda.handleRequest(orcaRequest, null));
+        WorkflowRequest workflowRequest = null;
+        assertThrows(NullPointerException.class, () -> s3MonitorLambda.handleRequest(workflowRequest, null));
         verify(monitorManager, never()).getIndividualBopsJobDetails(s3ControlClient);
         verify(monitorManager, never()).calculateAggregateMonitoringDetails();
         verify(monitorManager, never()).calculateCrrMonitoringDetails(any(CloudWatchClient.class));
@@ -104,7 +104,7 @@ class BOPSParallelMonitorLambdaTest {
 
     @Test
     void testHandleRequestWithValidInput() {
-        OrcaRequest orcaRequest = getTestOrcaRequest();
+        WorkflowRequest workflowRequest = getTestWorkflowRequest();
         WorkFlowModel workflowModel = getTestWorkflowModel();
         CloudWatchClient mockLocalCloudWatchClient = mock(CloudWatchClient.class);
         CloudWatchClientBuilder mockBuilder = mock(CloudWatchClientBuilder.class);
@@ -119,11 +119,11 @@ class BOPSParallelMonitorLambdaTest {
             when(s3ClientFactory.createS3ControlClient("source-role-arn", "us-west-2")).thenReturn(s3ControlClient);
             when(s3ClientFactory.createCloudwatchClient(MONITOR_ROLE, "us-east-1")).thenReturn(cloudwatchClient);
 
-            OrcaResponse orcaResponse = s3MonitorLambda.handleRequest(orcaRequest, null);
+            WorkflowResponse workflowResponse = s3MonitorLambda.handleRequest(workflowRequest, null);
 
-            assertEquals("testWorkflow", orcaResponse.getWorkflowName());
-            assertEquals("testNamespace", orcaResponse.getNamespaceID());
-            assertEquals("RUNNING", orcaResponse.getStatus());
+            assertEquals("testWorkflow", workflowResponse.getWorkflowName());
+            assertEquals("testNamespace", workflowResponse.getNamespaceID());
+            assertEquals("RUNNING", workflowResponse.getStatus());
             verify(monitorManager, times(1)).getIndividualBopsJobDetails(s3ControlClient);
             verify(monitorManager, times(1)).calculateAggregateMonitoringDetails();
             verify(monitorManager, times(1)).calculateCrrMonitoringDetails(any(CloudWatchClient.class));
@@ -132,7 +132,7 @@ class BOPSParallelMonitorLambdaTest {
 
     @Test
     void testHandleRequestWithStoppingWorkflow_ContinuesMonitoring() {
-        OrcaRequest orcaRequest = getTestOrcaRequest();
+        WorkflowRequest workflowRequest = getTestWorkflowRequest();
         WorkFlowModel workflowModel = getTestWorkflowModel();
         workflowModel.setStatus(WorkflowStatus.STOPPING.name());
         CloudWatchClient mockLocalCloudWatchClient = mock(CloudWatchClient.class);
@@ -148,11 +148,11 @@ class BOPSParallelMonitorLambdaTest {
             when(s3ClientFactory.createS3ControlClient("source-role-arn", "us-west-2")).thenReturn(s3ControlClient);
             when(s3ClientFactory.createCloudwatchClient(MONITOR_ROLE, "us-east-1")).thenReturn(cloudwatchClient);
 
-            OrcaResponse orcaResponse = s3MonitorLambda.handleRequest(orcaRequest, null);
+            WorkflowResponse workflowResponse = s3MonitorLambda.handleRequest(workflowRequest, null);
 
-            assertEquals("testWorkflow", orcaResponse.getWorkflowName());
-            assertEquals("testNamespace", orcaResponse.getNamespaceID());
-            assertEquals("STOPPING", orcaResponse.getStatus());
+            assertEquals("testWorkflow", workflowResponse.getWorkflowName());
+            assertEquals("testNamespace", workflowResponse.getNamespaceID());
+            assertEquals("STOPPING", workflowResponse.getStatus());
             verify(monitorManager, times(1)).getIndividualBopsJobDetails(s3ControlClient);
             verify(monitorManager, times(1)).calculateAggregateMonitoringDetails();
             verify(monitorManager, times(1)).calculateCrrMonitoringDetails(any(CloudWatchClient.class));
@@ -161,18 +161,18 @@ class BOPSParallelMonitorLambdaTest {
 
     @Test
     void testHandleRequestWithFailedWorkflow_ExitsMonitoring() {
-        OrcaRequest orcaRequest = getTestOrcaRequest();
+        WorkflowRequest workflowRequest = getTestWorkflowRequest();
         WorkFlowModel workflowModel = getTestWorkflowModel();
         workflowModel.setStatus(WorkflowStatus.FAILED.name());
 
         when(workflowRepository.getWorkflow("testWorkflow", "testNamespace")).thenReturn(workflowModel);
         when(workflowStatusManager.shouldContinueMonitoring(workflowModel)).thenReturn(false);
 
-        OrcaResponse orcaResponse = s3MonitorLambda.handleRequest(orcaRequest, null);
+        WorkflowResponse workflowResponse = s3MonitorLambda.handleRequest(workflowRequest, null);
 
-        assertEquals("testWorkflow", orcaResponse.getWorkflowName());
-        assertEquals("testNamespace", orcaResponse.getNamespaceID());
-        assertEquals("FAILED", orcaResponse.getStatus());
+        assertEquals("testWorkflow", workflowResponse.getWorkflowName());
+        assertEquals("testNamespace", workflowResponse.getNamespaceID());
+        assertEquals("FAILED", workflowResponse.getStatus());
         verify(monitorManager, never()).getIndividualBopsJobDetails(s3ControlClient);
         verify(monitorManager, never()).calculateAggregateMonitoringDetails();
         verify(monitorManager, never()).calculateCrrMonitoringDetails(any(CloudWatchClient.class));
@@ -180,7 +180,7 @@ class BOPSParallelMonitorLambdaTest {
 
     @Test
     void testHandleRequestThrowException() {
-        OrcaRequest orcaRequest = getTestOrcaRequest();
+        WorkflowRequest workflowRequest = getTestWorkflowRequest();
         WorkFlowModel workflowModel = getTestWorkflowModel();
 
         when(workflowRepository.getWorkflow("testWorkflow", "testNamespace"))
@@ -189,31 +189,31 @@ class BOPSParallelMonitorLambdaTest {
         when(s3ClientFactory.createS3ControlClient(
                 eq(workflowModel.getSourceRoleARN()),
                 eq(workflowModel.getSourceRegion()))).thenThrow(AwsServiceException.class);
-        OrcaResponse orcaResponse = s3MonitorLambda.handleRequest(orcaRequest, null);
+        WorkflowResponse workflowResponse = s3MonitorLambda.handleRequest(workflowRequest, null);
 
-        assertEquals("testWorkflow", orcaResponse.getWorkflowName());
-        assertEquals("testNamespace", orcaResponse.getNamespaceID());
-        assertEquals("FAILED", orcaResponse.getStatus());
+        assertEquals("testWorkflow", workflowResponse.getWorkflowName());
+        assertEquals("testNamespace", workflowResponse.getNamespaceID());
+        assertEquals("FAILED", workflowResponse.getStatus());
     }
 
     @Test
     void testHandleRequestWithValidInputNotRunning() {
-        OrcaRequest orcaRequest = getTestOrcaRequest();
+        WorkflowRequest workflowRequest = getTestWorkflowRequest();
         WorkFlowModel workflowModel = getTestWorkflowModel();
         workflowModel.setStatus("FAILED");
 
         when(workflowRepository.getWorkflow("testWorkflow", "testNamespace")).thenReturn(workflowModel);
-        OrcaResponse orcaResponse = s3MonitorLambda.handleRequest(orcaRequest, null);
+        WorkflowResponse workflowResponse = s3MonitorLambda.handleRequest(workflowRequest, null);
 
-        assertEquals("testWorkflow", orcaResponse.getWorkflowName());
-        assertEquals("testNamespace", orcaResponse.getNamespaceID());
-        assertEquals("FAILED", orcaResponse.getStatus());
+        assertEquals("testWorkflow", workflowResponse.getWorkflowName());
+        assertEquals("testNamespace", workflowResponse.getNamespaceID());
+        assertEquals("FAILED", workflowResponse.getStatus());
 
     }
 
     @Test
     void testHandleRequest_CreatesDashboard_Success() {
-        OrcaRequest orcaRequest = getTestOrcaRequest();
+        WorkflowRequest workflowRequest = getTestWorkflowRequest();
         WorkFlowModel workflowModel = getTestWorkflowModel();
         CloudWatchClient mockLocalCloudWatchClient = mock(CloudWatchClient.class);
         CloudWatchClientBuilder mockBuilder = mock(CloudWatchClientBuilder.class);
@@ -232,11 +232,11 @@ class BOPSParallelMonitorLambdaTest {
             when(cloudWatchDashboardManager.createCloudWatchDashboard(mockLocalCloudWatchClient,
                     workflowModel)).thenReturn("testUrl");
 
-            OrcaResponse orcaResponse = s3MonitorLambda.handleRequest(orcaRequest, null);
+            WorkflowResponse workflowResponse = s3MonitorLambda.handleRequest(workflowRequest, null);
 
-            assertEquals("testWorkflow", orcaResponse.getWorkflowName());
-            assertEquals("testNamespace", orcaResponse.getNamespaceID());
-            assertEquals("RUNNING", orcaResponse.getStatus());
+            assertEquals("testWorkflow", workflowResponse.getWorkflowName());
+            assertEquals("testNamespace", workflowResponse.getNamespaceID());
+            assertEquals("RUNNING", workflowResponse.getStatus());
             assertNotNull(workflowModel.getRuntimeConfig());
             assertEquals("testUrl", workflowModel.getRuntimeConfig().getDashboardUrl());
         }
@@ -244,7 +244,7 @@ class BOPSParallelMonitorLambdaTest {
 
     @Test
     void testHandleRequest_NoDashboard_Success() {
-        OrcaRequest orcaRequest = getTestOrcaRequest();
+        WorkflowRequest workflowRequest = getTestWorkflowRequest();
         WorkFlowModel workflowModel = getTestWorkflowModel();
         CloudWatchClient mockLocalCloudWatchClient = mock(CloudWatchClient.class);
         CloudWatchClientBuilder mockBuilder = mock(CloudWatchClientBuilder.class);
@@ -260,11 +260,11 @@ class BOPSParallelMonitorLambdaTest {
             when(s3ClientFactory.createCloudwatchClient(MONITOR_ROLE, "us-east-1")).thenReturn(cloudwatchClient);
             when(monitorManager.publishCWMetrics(mockLocalCloudWatchClient)).thenReturn(true);
 
-            OrcaResponse orcaResponse = s3MonitorLambda.handleRequest(orcaRequest, null);
+            WorkflowResponse workflowResponse = s3MonitorLambda.handleRequest(workflowRequest, null);
 
-            assertEquals("testWorkflow", orcaResponse.getWorkflowName());
-            assertEquals("testNamespace", orcaResponse.getNamespaceID());
-            assertEquals("RUNNING", orcaResponse.getStatus());
+            assertEquals("testWorkflow", workflowResponse.getWorkflowName());
+            assertEquals("testNamespace", workflowResponse.getNamespaceID());
+            assertEquals("RUNNING", workflowResponse.getStatus());
             assertNull(workflowModel.getRuntimeConfig());
         }
     }
@@ -285,10 +285,10 @@ class BOPSParallelMonitorLambdaTest {
         return workflowModel;
     }
 
-    private OrcaRequest getTestOrcaRequest() {
-        OrcaRequest orcaRequest = new OrcaRequest();
-        orcaRequest.setWorkflowName("testWorkflow");
-        orcaRequest.setNamespaceID("testNamespace");
-        return orcaRequest;
+    private WorkflowRequest getTestWorkflowRequest() {
+        WorkflowRequest workflowRequest = new WorkflowRequest();
+        workflowRequest.setWorkflowName("testWorkflow");
+        workflowRequest.setNamespaceID("testNamespace");
+        return workflowRequest;
     }
 }

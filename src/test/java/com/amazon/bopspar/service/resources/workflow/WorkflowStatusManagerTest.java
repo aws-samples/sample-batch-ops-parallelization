@@ -3,7 +3,7 @@ package com.amazon.bopspar.service.resources.workflow;
 import com.amazon.bopspar.persistence.manager.WorkflowStatus;
 import com.amazon.bopspar.persistence.ddb.WorkflowRepository;
 import com.amazon.bopspar.persistence.model.WorkFlowModel;
-import com.amazon.bopspar.service.responses.OrcaResponse;
+import com.amazon.bopspar.service.responses.WorkflowResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -38,7 +38,7 @@ class WorkflowStatusManagerTest {
         workflowModel.setStatus(WorkflowStatus.STOPPING.name());
 
         // Act
-        OrcaResponse response = workflowStatusManager.handleStoppingStatus(workflowModel);
+        WorkflowResponse response = workflowStatusManager.handleStoppingStatus(workflowModel);
 
         // Assert
         assertNotNull(response);

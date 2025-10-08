@@ -5,10 +5,10 @@ import com.amazon.bopspar.model.InvalidInputException;
 import com.amazon.bopspar.persistence.manager.WorkflowStatus;
 import com.amazon.bopspar.persistence.ddb.WorkflowRepository;
 import com.amazon.bopspar.persistence.model.WorkFlowModel;
-import com.amazon.bopspar.service.requests.OrcaRequest;
+import com.amazon.bopspar.service.requests.WorkflowRequest;
 import com.amazon.bopspar.service.resources.auth.S3ClientFactory;
 import com.amazon.bopspar.service.resources.replication.S3PostReplicationService;
-import com.amazon.bopspar.service.responses.OrcaResponse;
+import com.amazon.bopspar.service.responses.WorkflowResponse;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -52,7 +52,7 @@ class S3PostReplicationLambdaTest{
     @Mock
     private WorkFlowModel workflowModel;
     @Mock
-    private OrcaRequest orcaRequest;
+    private WorkflowRequest workflowRequest;
     @Mock
     private S3ClientFactory s3ClientFactory;
     @Mock
@@ -104,9 +104,9 @@ class S3PostReplicationLambdaTest{
         workflowModel.setSourceAccountNumber(TEST_SOURCE_ACCOUNT);
         workflowModel.setDestAccountNumber(TEST_SOURCE_ACCOUNT);
 
-        orcaRequest = new OrcaRequest();
-        orcaRequest.setWorkflowName(TEST_WORKFLOW_NAME);
-        orcaRequest.setNamespaceID(TEST_NAMESPACE_ID);
+        workflowRequest = new WorkflowRequest();
+        workflowRequest.setWorkflowName(TEST_WORKFLOW_NAME);
+        workflowRequest.setNamespaceID(TEST_NAMESPACE_ID);
     }
 
     @Test
@@ -123,7 +123,7 @@ class S3PostReplicationLambdaTest{
         when(s3ClientFactory.createKmsClient(TEST_DEST_ROLE, DEST_REGION)).thenReturn(destKmsClient);
         doNothing().when(s3PostReplicationService).reEnableBucketLifecycleRules(any(S3Client.class), anyString(), eq(workflowModel));
 
-        OrcaResponse response = assertDoesNotThrow(() -> lambda.handleRequest(orcaRequest, context));
+        WorkflowResponse response = assertDoesNotThrow(() -> lambda.handleRequest(workflowRequest, context));
 
         assertNotNull(response);
         assertEquals(WorkflowStatus.FINISHED.name(), response.getStatus());
@@ -149,7 +149,7 @@ class S3PostReplicationLambdaTest{
         when(s3ClientFactory.createKmsClient(TEST_DEST_ROLE, DEST_REGION)).thenReturn(destKmsClient);
         doNothing().when(s3PostReplicationService).reEnableBucketLifecycleRules(any(S3Client.class), anyString(), eq(workflowModel));
 
-        OrcaResponse response = assertDoesNotThrow(() -> lambda.handleRequest(orcaRequest, context));
+        WorkflowResponse response = assertDoesNotThrow(() -> lambda.handleRequest(workflowRequest, context));
 
         assertNotNull(response);
         assertEquals(WorkflowStatus.FINISHED.name(), response.getStatus());
@@ -175,7 +175,7 @@ class S3PostReplicationLambdaTest{
         when(s3ClientFactory.createKmsClient(TEST_DEST_ROLE, DEST_REGION)).thenReturn(destKmsClient);
         doNothing().when(s3PostReplicationService).reEnableBucketLifecycleRules(any(S3Client.class), anyString(), eq(workflowModel));
 
-        OrcaResponse response = assertDoesNotThrow(() -> lambda.handleRequest(orcaRequest, context));
+        WorkflowResponse response = assertDoesNotThrow(() -> lambda.handleRequest(workflowRequest, context));
 
         assertNotNull(response);
         assertEquals(WorkflowStatus.FINISHED.name(), response.getStatus());
@@ -194,8 +194,8 @@ class S3PostReplicationLambdaTest{
 
     @Test
     void testS3PostReplication_NullWorkflowName_ThrowsInvalidInputException() {
-        orcaRequest.setWorkflowName(null);
-        InvalidInputException exception = assertThrows(InvalidInputException.class, () -> lambda.handleRequest(orcaRequest, context));
+        workflowRequest.setWorkflowName(null);
+        InvalidInputException exception = assertThrows(InvalidInputException.class, () -> lambda.handleRequest(workflowRequest, context));
 
         assertNotNull(exception);
         assertEquals("Invalid input! WorkflowName and NamespaceID are required.", exception.getMessage());
@@ -207,8 +207,8 @@ class S3PostReplicationLambdaTest{
 
     @Test
     void testS3PostReplication_NullNamespaceId_ThrowsInvalidInputException() {
-        orcaRequest.setNamespaceID(null);
-        InvalidInputException exception = assertThrows(InvalidInputException.class, () -> lambda.handleRequest(orcaRequest, context));
+        workflowRequest.setNamespaceID(null);
+        InvalidInputException exception = assertThrows(InvalidInputException.class, () -> lambda.handleRequest(workflowRequest, context));
 
         assertNotNull(exception);
         assertEquals("Invalid input! WorkflowName and NamespaceID are required.", exception.getMessage());
@@ -222,7 +222,7 @@ class S3PostReplicationLambdaTest{
     void testS3PostReplication_NoWorkflowFound_ThrowsEntityNotFoundException() {
         when(workflowRepository.getWorkflow(TEST_WORKFLOW_NAME, TEST_NAMESPACE_ID)).thenThrow(EntityNotFoundException.class);
 
-        assertThrows(EntityNotFoundException.class, () -> lambda.handleRequest(orcaRequest, context));
+        assertThrows(EntityNotFoundException.class, () -> lambda.handleRequest(workflowRequest, context));
 
         verify(workflowRepository, times(1)).getWorkflow(TEST_WORKFLOW_NAME, TEST_NAMESPACE_ID);
         verify(s3PostReplicationService, never()).reEnableBucketLifecycleRules(any(S3Client.class), anyString(), any(WorkFlowModel.class));
@@ -234,7 +234,7 @@ class S3PostReplicationLambdaTest{
         when(workflowRepository.getWorkflow(TEST_WORKFLOW_NAME, TEST_NAMESPACE_ID)).thenReturn(workflowModel);
         when(s3ClientFactory.createS3Client(TEST_SOURCE_ROLE, SOURCE_REGION)).thenThrow(RuntimeException.class);
 
-        OrcaResponse response = assertDoesNotThrow(() -> lambda.handleRequest(orcaRequest, context));
+        WorkflowResponse response = assertDoesNotThrow(() -> lambda.handleRequest(workflowRequest, context));
 
         assertNotNull(response);
         assertNotNull(response.getErrorDetails());
@@ -255,7 +255,7 @@ class S3PostReplicationLambdaTest{
         when(s3ClientFactory.createS3Client(TEST_DEST_ROLE, DEST_REGION)).thenReturn(destS3Client);
         doThrow(S3Exception.class).when(s3PostReplicationService).reEnableBucketLifecycleRules(any(S3Client.class), anyString(), eq(workflowModel));
 
-        OrcaResponse response = assertDoesNotThrow(() -> lambda.handleRequest(orcaRequest, context));
+        WorkflowResponse response = assertDoesNotThrow(() -> lambda.handleRequest(workflowRequest, context));
 
         assertNotNull(response);
         assertNotNull(response.getErrorDetails());

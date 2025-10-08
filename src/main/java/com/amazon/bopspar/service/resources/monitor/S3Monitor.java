@@ -229,7 +229,7 @@ public class S3Monitor {
      * @param cloudwatchClient AWS SDK Cloudwatch client
      * @param srcBucketName bucket which originates the replication rule ID
      * @param destBucketName bucket for which we need replication metrics
-     * @param metricName Name of the desired Cloudwatch metrics 
+     * @param metricName Name of the desired Cloudwatch metrics
      * @param startTime start time of the first datapoint to return (in ISO 8601 UTC format)
      * @param period Granularity in seconds of the returned datapoints
      * @return The value of the desired metric
@@ -249,14 +249,14 @@ public class S3Monitor {
         Dimension ruleDim = Dimension.builder().name("RuleId").value(replicationRuleId).build();
         Collection<Dimension> dims = new ArrayList<>(List.of(srcBucketDim, destBucketDim, ruleDim));
 
-        // To break out metrics by specific dimensions not natively supported by ORCA
+        // To break out metrics by specific dimensions not natively supported by Workflow
         GetMetricStatisticsRequest metricsRequest = GetMetricStatisticsRequest.builder()
                 .metricName(metricName)
                 .namespace("AWS/S3")
                 .dimensions(dims)
-                .startTime(startTime) 
+                .startTime(startTime)
                 .endTime(Instant.ofEpochMilli(System.currentTimeMillis()))
-                .period(period) 
+                .period(period)
                 .statisticsWithStrings("Maximum")
                 .build();
         try {
@@ -305,14 +305,14 @@ public class S3Monitor {
 
         }
         //Second: Get CRR metrics and decide if CRR is done.
-        startTime = Instant.ofEpochMilli(System.currentTimeMillis() - CRR_BYTESPENDING_THRESHOLD_PERIOD); 
+        startTime = Instant.ofEpochMilli(System.currentTimeMillis() - CRR_BYTESPENDING_THRESHOLD_PERIOD);
         bytesPendingValue = getCRRMetrics(cloudwatchClient, srcBucketName, destBucketArn,
                 destBucketRegion, destBucketName, S3_BYTES_PENDING_REPLICATION, startTime, period);
         if (bytesPendingValue < 0 ) {
             crrStatus = CRRStatus.CRR_STATUS_ERROR;
         } else if (bytesPendingValue == (double)CRR_BYTESPENDING_THRESHOLD_VALUE ) {
             crrStatus = CRRStatus.CRR_FINISHED;
-        } 
+        }
         monitorDetails.setCrrStatus(crrStatus.name());
         return monitorDetails;
 

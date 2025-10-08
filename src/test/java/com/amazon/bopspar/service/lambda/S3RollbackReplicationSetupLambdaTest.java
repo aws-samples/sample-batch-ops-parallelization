@@ -5,11 +5,11 @@ import com.amazon.bopspar.persistence.manager.WorkflowStatus;
 import com.amazon.bopspar.service.TestBase;
 import com.amazon.bopspar.persistence.ddb.WorkflowRepository;
 import com.amazon.bopspar.persistence.model.WorkFlowModel;
-import com.amazon.bopspar.service.requests.OrcaRequest;
+import com.amazon.bopspar.service.requests.WorkflowRequest;
 import com.amazon.bopspar.service.resources.auth.S3ClientFactory;
 import com.amazon.bopspar.service.resources.replication.S3ReplicationConfigurator;
 import com.amazon.bopspar.service.resources.replication.S3ReplicationUtils;
-import com.amazon.bopspar.service.responses.OrcaResponse;
+import com.amazon.bopspar.service.responses.WorkflowResponse;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -67,7 +67,7 @@ class S3RollbackReplicationSetupLambdaTest extends TestBase{
     @InjectMocks
     private S3RollbackReplicationSetupLambda lambda;
 
-    private OrcaRequest orcaRequest;
+    private WorkflowRequest workflowRequest;
     private static final String BIDIRECTIONAL_FLAG = "bidirectional";
     private static final String SUCCESS_STATUS = String.valueOf(JobStatus.FINISHED);
     private static final String FAILURE_STATUS = String.valueOf(JobStatus.FAILED);
@@ -75,9 +75,9 @@ class S3RollbackReplicationSetupLambdaTest extends TestBase{
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        orcaRequest = new OrcaRequest();
-        orcaRequest.setWorkflowName("testWorkflow");
-        orcaRequest.setNamespaceID("testNamespace");
+        workflowRequest = new WorkflowRequest();
+        workflowRequest.setWorkflowName("testWorkflow");
+        workflowRequest.setNamespaceID("testNamespace");
     }
 
     @Test
@@ -88,11 +88,11 @@ class S3RollbackReplicationSetupLambdaTest extends TestBase{
 
     @Test
     void testHandleRequest_InvalidInput_ThrowsInvalidInputException_NullWorkflowName() {
-        orcaRequest.setWorkflowName(null);
-        orcaRequest.setNamespaceID("validNamespace");
+        workflowRequest.setWorkflowName(null);
+        workflowRequest.setNamespaceID("validNamespace");
 
         InvalidInputException thrown = assertThrows(InvalidInputException.class, () ->
-                lambda.handleRequest(orcaRequest, null));
+                lambda.handleRequest(workflowRequest, null));
 
         assertEquals("Invalid input! WorkflowName and NamespaceID are required.", thrown.getMessage());
     }
@@ -109,7 +109,7 @@ class S3RollbackReplicationSetupLambdaTest extends TestBase{
         setupMockClients(workflowDetails);
         setupSuccessfulReplicationScenario();
 
-        OrcaResponse result = lambda.handleRequest(orcaRequest, null);
+        WorkflowResponse result = lambda.handleRequest(workflowRequest, null);
 
         assertEquals(SUCCESS_STATUS, result.getStatus());
         // Get the swapped workflow that will be used in the lambda
@@ -124,7 +124,7 @@ class S3RollbackReplicationSetupLambdaTest extends TestBase{
         setupMockClients(workflowDetails);
         setupSuccessfulReplicationScenario();
 
-        OrcaResponse result = lambda.handleRequest(orcaRequest, null);
+        WorkflowResponse result = lambda.handleRequest(workflowRequest, null);
 
         assertEquals(SUCCESS_STATUS, result.getStatus());
         // Get the swapped workflow that will be used in the lambda
@@ -149,7 +149,7 @@ class S3RollbackReplicationSetupLambdaTest extends TestBase{
         )).thenReturn(mockDestKmsClient);
 
         // Act
-        OrcaResponse result = lambda.handleRequest(orcaRequest, null);
+        WorkflowResponse result = lambda.handleRequest(workflowRequest, null);
 
         // Assert
         assertEquals(SUCCESS_STATUS, result.getStatus());
@@ -194,7 +194,7 @@ class S3RollbackReplicationSetupLambdaTest extends TestBase{
         setupMockClients(workflowDetails);
         setupSuccessfulReplicationScenario();
 
-        OrcaResponse result = lambda.handleRequest(orcaRequest, null);
+        WorkflowResponse result = lambda.handleRequest(workflowRequest, null);
 
         assertEquals(SUCCESS_STATUS, result.getStatus());
         verify(replicationService, never()).updateDestKeyPolicyIfBucketIsKmsEncrypted(
@@ -210,7 +210,7 @@ class S3RollbackReplicationSetupLambdaTest extends TestBase{
         when(s3ClientFactory.createS3Client(anyString(), anyString()))
                 .thenThrow(AwsServiceException.builder().build());
 
-        OrcaResponse result = lambda.handleRequest(orcaRequest, null);
+        WorkflowResponse result = lambda.handleRequest(workflowRequest, null);
 
         assertEquals(FAILURE_STATUS, result.getStatus());
         verify(workflowRepository).updateWorkflow(argThat(wf ->
@@ -227,7 +227,7 @@ class S3RollbackReplicationSetupLambdaTest extends TestBase{
                 .when(replicationService)
                 .setupLiveReplication(any(), any(), any(), any());
 
-        OrcaResponse result = lambda.handleRequest(orcaRequest, null);
+        WorkflowResponse result = lambda.handleRequest(workflowRequest, null);
 
         assertEquals(FAILURE_STATUS, result.getStatus());
         verify(workflowRepository).updateWorkflow(argThat(wf ->
