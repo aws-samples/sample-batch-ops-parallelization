@@ -6,7 +6,7 @@ public final class MonitorConstants {
         throw new UnsupportedOperationException("Utility class cannot be instantiated");
     }
 
-    public static final String METRICS_NAMESPACE = "TDMS3MigrationAccelerator";
+    public static final String METRICS_NAMESPACE = "BOPSParallel";
     public static final String WORKFLOW_NAME_DIMENSION = "workflowName";
     public static final String NAMESPACE_ID_DIMENSION = "namespaceID";
     public static final String CRR_LATENCY_METRIC = "CRRLatency";
@@ -18,7 +18,7 @@ public final class MonitorConstants {
     public static final String WORKFLOW_STATUS_FAILED = "S3AWorkflowStatusFailure";
     public static final String TICKET_ARN_PREFIX = "arn:aws:cloudwatch::cwa-internal:ticket";
     public static final String ALARM_PREFIX = "S3AFailedAlarm";
-    public static final String SOP_URL = "https://quip-amazon.com/9dvyAjCCGajd/S3A-Move-My-Bucket-SOP";
+    public static final String SOP_URL = "https://tbd";
 
     //The maximum number of seconds by which the replication destination bucket is behind
     //the source bucket for a given replication rule.
@@ -30,7 +30,7 @@ public final class MonitorConstants {
     public static final int CRR_BYTESPENDING_THRESHOLD_PERIOD = 600000;
     public static final String STOP_TRAFFIC_NOTIFICATION_ID = "STOP_SOURCE_TRAFFIC_ACK";
 
-    // Alarm constants
+    // Alarm constants: TODO - Remove
     public static final String TICKET_SEVERITY = "4";
     public static final String TICKET_CATEGORY = "Company-wide Services";
     public static final String TICKET_TYPE = "CDMS";

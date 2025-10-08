@@ -28,20 +28,20 @@ import java.util.Optional;
 * S3A Monitoring Lambda.
 *
 */
-public class S3MonitorLambda implements RequestHandler<OrcaRequest, OrcaResponse> {
-    private static final Logger LOGGER = LogManager.getLogger(S3MonitorLambda.class);
+public class BOPSParallelMonitorLambda implements RequestHandler<OrcaRequest, OrcaResponse> {
+    private static final Logger LOGGER = LogManager.getLogger(BOPSParallelMonitorLambda.class);
     private final WorkflowRepository workflowRepository;
     private final S3MonitorManagerFactory monitorManagerFactory;
     private final CloudWatchDashboardManager cloudWatchDashboardManager;
     private final S3ClientFactory s3ClientFactory;
     private final WorkflowStatusManager workflowStatusManager;
-    private static final String S3A_MONITOR_VERSION = "VERSION: [S3A Monitor - v0.9.1.20241127-16:00]";
+    private static final String BOPS_MONITOR_VERSION = "VERSION: [BOPS Parallel Monitor - v1.0.0.20251008-10:30]";
     private static final String CLOUDWATCH_ROLE_NAME = "s3a-cloudwatch-permissions";
 
     /**
      * Initializes CRUD layer and S3MonitorManagerFactory.
      */
-    public S3MonitorLambda() {
+    public BOPSParallelMonitorLambda() {
         LambdaComponent lambdaComponent = DaggerLambdaComponent.create();
         this.workflowRepository = lambdaComponent.getWorkflowRepository();
         this.monitorManagerFactory = lambdaComponent.getS3MonitorManagerFactory();
@@ -51,7 +51,7 @@ public class S3MonitorLambda implements RequestHandler<OrcaRequest, OrcaResponse
     }
 
     // for unit testing
-    S3MonitorLambda(final WorkflowRepository workflowRepository,
+    BOPSParallelMonitorLambda(final WorkflowRepository workflowRepository,
                     final S3MonitorManagerFactory monitorManagerFactory,
                     final CloudWatchDashboardManager cloudWatchDashboardManager,
                     final S3ClientFactory s3ClientFactory,
@@ -75,7 +75,7 @@ public class S3MonitorLambda implements RequestHandler<OrcaRequest, OrcaResponse
      */
     @Override
     public OrcaResponse handleRequest(final OrcaRequest orcaRequest, final Context context) {
-        LOGGER.info(S3A_MONITOR_VERSION);
+        LOGGER.info(BOPS_MONITOR_VERSION);
         // IMPORTANT: For the lambda to be able to make the S3 SDK calls, the lambda role needs iam:PassRole
         // on the source or target account roles
         // and the source/target roles need a policy to allow S3 and lambda ops with the lambda role as principal

@@ -32,7 +32,7 @@ import static com.amazon.bopspar.service.resources.monitor.dashboard.DashboardCo
 /**
  * Utility class to create dashboard body for S3 Accelerator Monitor.
  */
-public class S3AcceleratorDashboard {
+public class BOPSParallelDashboard {
 
     /**
      * Creates the dashboard body for the S3 Accelerator Monitor.

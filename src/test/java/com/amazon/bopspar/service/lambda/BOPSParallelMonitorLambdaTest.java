@@ -40,7 +40,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class S3MonitorLambdaTest {
+class BOPSParallelMonitorLambdaTest {
 
     @Mock
     private WorkflowRepository workflowRepository;
@@ -59,19 +59,19 @@ class S3MonitorLambdaTest {
     @Mock
     private WorkflowStatusManager workflowStatusManager;
 
-    private S3MonitorLambda s3MonitorLambda;
+    private BOPSParallelMonitorLambda s3MonitorLambda;
 
     private static final String MONITOR_ROLE = "arn:aws:iam::123456789:role/s3a-cloudwatch-permissions";
 
     @BeforeEach
     void setUp() {
-        s3MonitorLambda = new S3MonitorLambda(workflowRepository, monitorManagerFactory, cloudWatchDashboardManager,
+        s3MonitorLambda = new BOPSParallelMonitorLambda(workflowRepository, monitorManagerFactory, cloudWatchDashboardManager,
                 s3ClientFactory, workflowStatusManager);
     }
 
     @Test
     void testDefaultConstructor() {
-        s3MonitorLambda = new S3MonitorLambda();
+        s3MonitorLambda = new BOPSParallelMonitorLambda();
         assertNotNull(s3MonitorLambda);
     }
 

@@ -21,13 +21,13 @@ import static org.mockito.Mockito.when;
 
 class CloudWatchDashboardManagerTest {
 
-    private static final String DASHBOARD_URL = "https://us-east-1.console.aws.amazon.com/cloudwatch/home?region=us-east-1#dashboards/dashboard/TDMS3MigrationAccelerator-123456789-test-namespace-test-workflow";
+    private static final String DASHBOARD_URL = "https://us-west-2.console.aws.amazon.com/cloudwatch/home?region=us-west-2#dashboards/dashboard/BOPSParallel-123456789-test-namespace-test-workflow";
 
     @Mock
     private CloudWatchClient cloudWatchClientMock;
 
     @Mock
-    private S3AcceleratorDashboard s3AcceleratorDashboardMock;
+    private BOPSParallelDashboard bopsparDashboardMock;
 
     private WorkFlowModel workflowModel;
 
@@ -48,13 +48,13 @@ class CloudWatchDashboardManagerTest {
                 .destRoleARN("test-role")
                 .destRegion("us-east-1")
                 .build();
-        cloudWatchDashboardManager = new CloudWatchDashboardManager(s3AcceleratorDashboardMock);
+        cloudWatchDashboardManager = new CloudWatchDashboardManager(bopsparDashboardMock);
     }
 
     @Test
     void createCloudWatchDashboard_Success() {
         // Set up mocks
-        when(s3AcceleratorDashboardMock.createDashboardBody(workflowModel))
+        when(bopsparDashboardMock.createDashboardBody(workflowModel))
                 .thenReturn("test-dashboard-body");
 
         when(cloudWatchClientMock.getDashboard(any(GetDashboardRequest.class)))
@@ -67,13 +67,13 @@ class CloudWatchDashboardManagerTest {
         
         assertEquals(DASHBOARD_URL, dashboardUrl);
         verify(cloudWatchClientMock, times(1)).putDashboard(any(PutDashboardRequest.class));
-        verify(s3AcceleratorDashboardMock, times(1)).createDashboardBody(workflowModel);
+        verify(bopsparDashboardMock, times(1)).createDashboardBody(workflowModel);
     }
 
     @Test
     void createCloudWatchDashboard_Fails_ReturnsNull() {
         // Set up mocks
-        when(s3AcceleratorDashboardMock.createDashboardBody(workflowModel))
+        when(bopsparDashboardMock.createDashboardBody(workflowModel))
                 .thenReturn("test-dashboard-body");
 
         when(cloudWatchClientMock.getDashboard(any(GetDashboardRequest.class)))
@@ -86,6 +86,6 @@ class CloudWatchDashboardManagerTest {
         
         assertNull(dashboardUrl);
         verify(cloudWatchClientMock, times(1)).putDashboard(any(PutDashboardRequest.class));
-        verify(s3AcceleratorDashboardMock, times(1)).createDashboardBody(workflowModel);
+        verify(bopsparDashboardMock, times(1)).createDashboardBody(workflowModel);
     }
 }

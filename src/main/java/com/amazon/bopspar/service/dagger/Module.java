@@ -13,7 +13,7 @@ import com.amazon.bopspar.service.resources.monitor.bops.BopsMonitorManager;
 import com.amazon.bopspar.service.resources.monitor.cloudwatch.CloudWatchManager;
 import com.amazon.bopspar.service.resources.monitor.crr.CrrMonitorManager;
 import com.amazon.bopspar.service.resources.monitor.dashboard.CloudWatchDashboardManager;
-import com.amazon.bopspar.service.resources.monitor.dashboard.S3AcceleratorDashboard;
+import com.amazon.bopspar.service.resources.monitor.dashboard.BOPSParallelDashboard;
 import com.amazon.bopspar.service.resources.replication.S3PostReplicationService;
 import com.amazon.bopspar.service.resources.replication.S3ReplicationConfigurator;
 import com.amazon.bopspar.service.resources.replication.bops.S3BatchOperationsManager;
@@ -116,14 +116,14 @@ public class Module {
     @Provides
     @Singleton
     public CloudWatchDashboardManager provideCloudWatchDashboardManager(
-            final S3AcceleratorDashboard s3AcceleratorDashboard) {
-        return new CloudWatchDashboardManager(s3AcceleratorDashboard);
+            final BOPSParallelDashboard bopsparDashboard) {
+        return new CloudWatchDashboardManager(bopsparDashboard);
     }
 
     @Provides
     @Singleton
-    public S3AcceleratorDashboard provideS3AcceleratorDashboard() {
-        return new S3AcceleratorDashboard();
+    public BOPSParallelDashboard providebopsparDashboard() {
+        return new BOPSParallelDashboard();
     }
 
     @Provides
