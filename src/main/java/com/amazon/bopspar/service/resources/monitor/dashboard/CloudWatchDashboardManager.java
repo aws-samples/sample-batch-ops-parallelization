@@ -22,10 +22,10 @@ import static com.amazon.bopspar.service.resources.monitor.dashboard.DashboardCo
 public class CloudWatchDashboardManager {
 
     private static final Logger LOGGER = LogManager.getLogger(CloudWatchDashboardManager.class);
-    private final S3AcceleratorDashboard s3AcceleratorDashboard;
+    private final BOPSParallelDashboard bopsparDashboard;
 
-    public CloudWatchDashboardManager(final S3AcceleratorDashboard s3AcceleratorDashboard) {
-        this.s3AcceleratorDashboard = s3AcceleratorDashboard;
+    public CloudWatchDashboardManager(final BOPSParallelDashboard bopsparDashboard) {
+        this.bopsparDashboard = bopsparDashboard;
     }
 
     /**
@@ -37,7 +37,7 @@ public class CloudWatchDashboardManager {
     public String createCloudWatchDashboard(final CloudWatchClient s3aCloudWatchClient,
                                             final WorkFlowModel workflowModel) {
         String dashboardName = buildDashboardName(workflowModel);
-        String dashboardBody = s3AcceleratorDashboard.createDashboardBody(workflowModel);
+        String dashboardBody = bopsparDashboard.createDashboardBody(workflowModel);
 
         try {
             PutDashboardRequest dashboardRequest = PutDashboardRequest.builder()

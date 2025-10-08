@@ -28,7 +28,7 @@ class S3AcceleratorDashboardTest {
     private Instant fixedCreationInstant;
     private Duration fixedDuration;
 
-    private S3AcceleratorDashboard s3AcceleratorDashboard;
+    private BOPSParallelDashboard bopsparDashboard;
 
     @BeforeEach
     void setUp() {
@@ -48,12 +48,12 @@ class S3AcceleratorDashboardTest {
         fixedNowInstant = Instant.parse("2023-06-01T10:15:30Z");
         fixedCreationInstant = Instant.parse("2023-06-01T09:10:30Z");
         fixedDuration = Duration.ofHours(1).plusMinutes(5);
-        s3AcceleratorDashboard = new S3AcceleratorDashboard();
+        bopsparDashboard = new BOPSParallelDashboard();
     }
 
     @Test
     void createDashboardBody_NoJobs() {
-        String dashboardBody = s3AcceleratorDashboard.createDashboardBody(workflowModel);
+        String dashboardBody = bopsparDashboard.createDashboardBody(workflowModel);
         assertTrue(dashboardBody.contains("*No running jobs*"));
         assertTrue(dashboardBody.contains("*No pending jobs*"));
         assertTrue(dashboardBody.contains("*No completed jobs*"));
@@ -68,7 +68,7 @@ class S3AcceleratorDashboardTest {
             setupMockedInstants(instantMockedStatic);
             setupMockedDuration(durationMockedStatic);
 
-            String dashboardBody = s3AcceleratorDashboard.createDashboardBody(workflowModel);
+            String dashboardBody = bopsparDashboard.createDashboardBody(workflowModel);
 
             assertAllJobTypesPresent(dashboardBody);
         }
@@ -81,7 +81,7 @@ class S3AcceleratorDashboardTest {
         try (MockedStatic<Instant> instantMockedStatic = mockStatic(Instant.class)) {
             setupMockedInstants(instantMockedStatic);
 
-            String dashboardBody = s3AcceleratorDashboard.createDashboardBody(workflowModel);
+            String dashboardBody = bopsparDashboard.createDashboardBody(workflowModel);
 
             assertTrue(dashboardBody.contains("### Running Jobs"));
             assertFalse(dashboardBody.contains("*No running jobs*"));
@@ -99,7 +99,7 @@ class S3AcceleratorDashboardTest {
             setupMockedInstants(instantMockedStatic);
             setupMockedDuration(durationMockedStatic);
 
-            String dashboardBody = s3AcceleratorDashboard.createDashboardBody(workflowModel);
+            String dashboardBody = bopsparDashboard.createDashboardBody(workflowModel);
 
             assertTrue(dashboardBody.contains("*No running jobs*"));
             assertTrue(dashboardBody.contains("### Pending Jobs"));
@@ -115,7 +115,7 @@ class S3AcceleratorDashboardTest {
         try (MockedStatic<Instant> instantMockedStatic = mockStatic(Instant.class)) {
             setupMockedInstants(instantMockedStatic);
 
-            String dashboardBody = s3AcceleratorDashboard.createDashboardBody(workflowModel);
+            String dashboardBody = bopsparDashboard.createDashboardBody(workflowModel);
 
             assertTrue(dashboardBody.contains("*No running jobs*"));
             assertTrue(dashboardBody.contains("*No pending jobs*"));
@@ -134,7 +134,7 @@ class S3AcceleratorDashboardTest {
                     .thenThrow(new JsonProcessingException("Test failure") {});
 
             RuntimeException thrown = assertThrows(RuntimeException.class,
-                    () -> s3AcceleratorDashboard.createDashboardBody(workflowModel));
+                    () -> bopsparDashboard.createDashboardBody(workflowModel));
 
             assertEquals("Failed to create dashboard JSON", thrown.getMessage());
             assertTrue(thrown.getCause() instanceof JsonProcessingException);
@@ -154,7 +154,7 @@ class S3AcceleratorDashboardTest {
             setupMockedInstants(instantMockedStatic);
             setupMockedDuration(durationMockedStatic);
 
-            String dashboardBody = s3AcceleratorDashboard.createDashboardBody(workflowModel);
+            String dashboardBody = bopsparDashboard.createDashboardBody(workflowModel);
 
             assertAllJobTypesPresent(dashboardBody);
         }
@@ -162,13 +162,13 @@ class S3AcceleratorDashboardTest {
 
     @Test
     void createDashboardBody_NullWorkflowModel() {
-        assertThrows(NullPointerException.class, () -> s3AcceleratorDashboard.createDashboardBody(null));
+        assertThrows(NullPointerException.class, () -> bopsparDashboard.createDashboardBody(null));
     }
 
     @Test
     void createDashboardBody_NullBopsJobDetails() {
         workflowModel.setBopsJobDetails(null);
-        String dashboardBody = s3AcceleratorDashboard.createDashboardBody(workflowModel);
+        String dashboardBody = bopsparDashboard.createDashboardBody(workflowModel);
         assertTrue(dashboardBody.contains("*No running jobs*"));
         assertTrue(dashboardBody.contains("*No pending jobs*"));
         assertTrue(dashboardBody.contains("*No completed jobs*"));
@@ -195,7 +195,7 @@ class S3AcceleratorDashboardTest {
             setupMockedInstants(instantMockedStatic);
             setupMockedDuration(durationMockedStatic);
 
-            String dashboardBody = s3AcceleratorDashboard.createDashboardBody(workflowModel);
+            String dashboardBody = bopsparDashboard.createDashboardBody(workflowModel);
 
             assertTrue(dashboardBody.contains("*No running jobs*"));
             assertTrue(dashboardBody.contains("### Pending Jobs"));
@@ -225,7 +225,7 @@ class S3AcceleratorDashboardTest {
             setupMockedInstants(instantMockedStatic);
             setupMockedDuration(durationMockedStatic);
 
-            String dashboardBody = s3AcceleratorDashboard.createDashboardBody(workflowModel);
+            String dashboardBody = bopsparDashboard.createDashboardBody(workflowModel);
 
             assertTrue(dashboardBody.contains("*No running jobs*"));
             assertTrue(dashboardBody.contains("### Completed Jobs"));

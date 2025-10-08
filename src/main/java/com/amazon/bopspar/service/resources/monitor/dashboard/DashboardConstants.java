@@ -6,9 +6,9 @@ public final class DashboardConstants {
         throw new UnsupportedOperationException("Utility class cannot be instantiated");
     }
 
-    public static final String DASHBOARD_PREFIX = "TDMS3MigrationAccelerator";
-    public static final String METRICS_NAMESPACE = "TDMS3MigrationAccelerator";
-    public static final String DEFAULT_REGION = "us-east-1";
+    public static final String DASHBOARD_PREFIX = "BOPSParallel";
+    public static final String METRICS_NAMESPACE = "BOPSParallel";
+    public static final String DEFAULT_REGION = "us-west-2";
 
     // CloudWatch Dashboard Body Structure and Syntax: https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/CloudWatch-Dashboard-Body-Structure.html
 
