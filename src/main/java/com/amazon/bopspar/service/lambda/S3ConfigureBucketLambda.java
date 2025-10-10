@@ -6,14 +6,14 @@ import com.amazon.bopspar.persistence.ddb.WorkflowRepository;
 import com.amazon.bopspar.persistence.model.WorkFlowModel;
 import com.amazon.bopspar.service.dagger.DaggerLambdaComponent;
 import com.amazon.bopspar.service.dagger.LambdaComponent;
-import com.amazon.bopspar.service.requests.OrcaRequest;
+import com.amazon.bopspar.service.requests.WorkflowRequest;
 import com.amazon.bopspar.service.resources.auth.S3ClientFactory;
 import com.amazon.bopspar.service.resources.s3.bucket.S3CreateBucketService;
 import com.amazon.bopspar.service.resources.s3.configuration.S3ConfigurationService;
 import com.amazon.bopspar.service.resources.workflow.WorkflowStatusManager;
-import com.amazon.bopspar.service.responses.OrcaResponse;
-import com.amazon.bopspar.service.responses.OrcaResponseBuilder;
-import com.amazon.bopspar.service.validator.OrcaRequestValidator;
+import com.amazon.bopspar.service.responses.WorkflowResponse;
+import com.amazon.bopspar.service.responses.WorkflowResponseBuilder;
+import com.amazon.bopspar.service.validator.WorkflowRequestValidator;
 import com.amazon.bopspar.service.validator.WorkflowValidator;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
@@ -27,7 +27,7 @@ import software.amazon.awssdk.services.s3.model.ExpirationStatus;
 
 import java.util.Map;
 
-public class S3ConfigureBucketLambda implements RequestHandler<OrcaRequest, OrcaResponse> {
+public class S3ConfigureBucketLambda implements RequestHandler<WorkflowRequest, WorkflowResponse> {
     private static final Logger LOGGER = LogManager.getLogger(S3ConfigureBucketLambda.class);
     private final WorkflowRepository workflowRepository;
     private final S3ClientFactory  s3ClientFactory;
@@ -57,11 +57,11 @@ public class S3ConfigureBucketLambda implements RequestHandler<OrcaRequest, Orca
     }
 
     @Override
-    public OrcaResponse handleRequest(final OrcaRequest orcaRequest, final Context context) {
-        OrcaRequestValidator.validateOrcaRequest(orcaRequest);
-        final String workflowName = orcaRequest.getWorkflowName();
-        final String namespaceID = orcaRequest.getNamespaceID();
-        LOGGER.info("Orca Request: {} {}", workflowName, namespaceID);
+    public WorkflowResponse handleRequest(final WorkflowRequest workflowRequest, final Context context) {
+        WorkflowRequestValidator.validateWorkflowRequest(workflowRequest);
+        final String workflowName = workflowRequest.getWorkflowName();
+        final String namespaceID = workflowRequest.getNamespaceID();
+        LOGGER.info("Workflow Request: {} {}", workflowName, namespaceID);
 
         final WorkFlowModel workflowModel = workflowRepository.getWorkflow(workflowName, namespaceID);
         WorkflowValidator.validateWorkflowArns(workflowModel);
@@ -126,7 +126,7 @@ public class S3ConfigureBucketLambda implements RequestHandler<OrcaRequest, Orca
                         ExpirationStatus.DISABLED);
 
                 workflowRepository.updateWorkflow(workflowModel);
-                return OrcaResponseBuilder.buildSuccessResponse(workflowModel, WorkflowStatus.FINISHED);
+                return WorkflowResponseBuilder.buildSuccessResponse(workflowModel, WorkflowStatus.FINISHED);
             }
         } catch (AwsServiceException exception) {
             LOGGER.error("Exception {} while configuring bucket for workflowName: {}, namespaceID: {}",
@@ -136,7 +136,7 @@ public class S3ConfigureBucketLambda implements RequestHandler<OrcaRequest, Orca
                     exception);
             workflowModel.setStatus(String.valueOf(WorkflowStatus.FAILED));
             workflowRepository.updateWorkflow(workflowModel);
-            return OrcaResponseBuilder.buildServiceErrorResponse(workflowModel, WorkflowStatus.FAILED, exception);
+            return WorkflowResponseBuilder.buildServiceErrorResponse(workflowModel, WorkflowStatus.FAILED, exception);
         } catch (RuntimeException exception) {
             LOGGER.error("RuntimeException while configuring bucket for workflowName: {}, namespaceID: {}",
                     workflowName,
@@ -144,7 +144,7 @@ public class S3ConfigureBucketLambda implements RequestHandler<OrcaRequest, Orca
                     exception);
             workflowModel.setStatus(String.valueOf(WorkflowStatus.FAILED));
             workflowRepository.updateWorkflow(workflowModel);
-            return OrcaResponseBuilder.buildRuntimeErrorResponse(workflowModel, WorkflowStatus.FAILED, exception);
+            return WorkflowResponseBuilder.buildRuntimeErrorResponse(workflowModel, WorkflowStatus.FAILED, exception);
         }
     }
 }

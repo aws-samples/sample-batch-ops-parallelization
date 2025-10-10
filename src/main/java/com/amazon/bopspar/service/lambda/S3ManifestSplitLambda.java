@@ -5,15 +5,15 @@ import com.amazon.bopspar.service.dagger.LambdaComponent;
 import com.amazon.bopspar.persistence.ddb.WorkflowRepository;
 import com.amazon.bopspar.persistence.model.WorkFlowModel;
 import com.amazon.bopspar.persistence.model.RuntimeConfig;
+import com.amazon.bopspar.service.requests.WorkflowRequest;
 import com.amazon.bopspar.service.resources.auth.S3ClientFactory;
 import com.amazon.bopspar.service.resources.s3.inventoryreportconfig.S3ManifestSplitService;
 import com.amazon.bopspar.service.resources.workflow.WorkflowState;
 import com.amazon.bopspar.persistence.manager.WorkflowStatus;
+import com.amazon.bopspar.service.responses.WorkflowResponse;
 import software.amazon.awssdk.services.glue.model.StartJobRunResponse;
-import com.amazon.bopspar.service.requests.OrcaRequest;
-import com.amazon.bopspar.service.responses.OrcaResponse;
-import com.amazon.bopspar.service.responses.OrcaResponseBuilder;
-import com.amazon.bopspar.service.validator.OrcaRequestValidator;
+import com.amazon.bopspar.service.responses.WorkflowResponseBuilder;
+import com.amazon.bopspar.service.validator.WorkflowRequestValidator;
 import com.amazon.bopspar.service.validator.WorkflowValidator;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
@@ -31,7 +31,7 @@ import java.util.Optional;
 /**
  * Lambda to split generated inventory report manifest into multiple manifest files.
  */
-public class S3ManifestSplitLambda implements RequestHandler<OrcaRequest, OrcaResponse> {
+public class S3ManifestSplitLambda implements RequestHandler<WorkflowRequest, WorkflowResponse> {
     private static final Logger LOGGER = LogManager.getLogger(S3ManifestSplitLambda.class);
 
     private static final String S3A_GLUE_JOB_ROLE_NAME = "s3a-cross-account-glue-job-role";
@@ -59,7 +59,7 @@ public class S3ManifestSplitLambda implements RequestHandler<OrcaRequest, OrcaRe
     }
 
     @Override
-    public OrcaResponse handleRequest(final OrcaRequest orcaRequest, final Context context) {
+    public WorkflowResponse handleRequest(final WorkflowRequest workflowRequest, final Context context) {
 
         final String glueJobRoleArn = String.format(
                 "arn:aws:iam::%s:role/%s",
@@ -67,10 +67,10 @@ public class S3ManifestSplitLambda implements RequestHandler<OrcaRequest, OrcaRe
                 S3A_GLUE_JOB_ROLE_NAME
         );
 
-        OrcaRequestValidator.validateOrcaRequest(orcaRequest);
-        final String workflowName = orcaRequest.getWorkflowName();
-        final String namespaceID = orcaRequest.getNamespaceID();
-        LOGGER.info("Orca Request: {} {}", workflowName, namespaceID);
+        WorkflowRequestValidator.validateWorkflowRequest(workflowRequest);
+        final String workflowName = workflowRequest.getWorkflowName();
+        final String namespaceID = workflowRequest.getNamespaceID();
+        LOGGER.info("Workflow Request: {} {}", workflowName, namespaceID);
 
         final WorkFlowModel workflowDetails = workflowRepository.getWorkflow(workflowName, namespaceID);
         WorkflowValidator.validateWorkflowArns(workflowDetails);
@@ -129,7 +129,7 @@ public class S3ManifestSplitLambda implements RequestHandler<OrcaRequest, OrcaRe
             workflowDetails.setStatus(String.valueOf(WorkflowStatus.FAILED));
             workflowDetails.setState(WorkflowState.PROCESS_INVENTORY_FAILED.name());
             workflowRepository.updateWorkflow(workflowDetails);
-            return OrcaResponseBuilder.buildServiceErrorResponse(workflowDetails, WorkflowStatus.FAILED, exception);
+            return WorkflowResponseBuilder.buildServiceErrorResponse(workflowDetails, WorkflowStatus.FAILED, exception);
         }
         catch (RuntimeException exception) {
             LOGGER.error("RuntimeException while splitting manifest for workflowName: {}, namespaceID: {}",
@@ -139,11 +139,11 @@ public class S3ManifestSplitLambda implements RequestHandler<OrcaRequest, OrcaRe
             workflowDetails.setStatus(String.valueOf(WorkflowStatus.FAILED));
             workflowDetails.setState(WorkflowState.PROCESS_INVENTORY_FAILED.name());
             workflowRepository.updateWorkflow(workflowDetails);
-            return OrcaResponseBuilder.buildRuntimeErrorResponse(workflowDetails, WorkflowStatus.FAILED, exception);
+            return WorkflowResponseBuilder.buildRuntimeErrorResponse(workflowDetails, WorkflowStatus.FAILED, exception);
         }
 
-        // Send Success Orca Response
-        return OrcaResponseBuilder.buildSuccessResponse(workflowDetails, WorkflowStatus.RUNNING);
+        // Send Success Workflow Response
+        return WorkflowResponseBuilder.buildSuccessResponse(workflowDetails, WorkflowStatus.RUNNING);
 
     }
 

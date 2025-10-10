@@ -9,22 +9,22 @@ import software.amazon.awssdk.awscore.exception.AwsServiceException;
 
 
 /**
- * Builder for different types of OrcaResponse objects based on success/error.
+ * Builder for different types of WorkflowResponse objects based on success/error.
  */
 
 @Log4j2
-public class OrcaResponseBuilder {
+public class WorkflowResponseBuilder {
 
     /**
-     * Builds a success Orca response.
+     * Builds a success Workflow response.
      *
      * @param workflowDetails The WorkflowModel containing required details
      * @param status The status of the workflow
-     * @return An OrcaResponse object with success details
+     * @return An WorkflowResponse object with success details
      */
-    public static OrcaResponse buildSuccessResponse(final WorkFlowModel workflowDetails,
-                                                    final WorkflowStatus status) {
-        return OrcaResponse.builder()
+    public static WorkflowResponse buildSuccessResponse(final WorkFlowModel workflowDetails,
+                                                        final WorkflowStatus status) {
+        return WorkflowResponse.builder()
                 .statusCode(200)
                 .namespaceID(workflowDetails.getNamespaceID())
                 .workflowName(workflowDetails.getWorkflowName())
@@ -35,25 +35,25 @@ public class OrcaResponseBuilder {
     }
 
     /**
-     * Builds an Orca response for AWS service-related exceptions, including S3Exceptions.
+     * Builds an Workflow response for AWS service-related exceptions, including S3Exceptions.
      *
      * @param workflowDetails The workflow model containing required details
      * @param status The status of the workflow
      * @param exception The AWS service exception that occurred
-     * @return An OrcaResponse object with AWS service error details
+     * @return An WorkflowResponse object with AWS service error details
      */
-    public static OrcaResponse buildServiceErrorResponse(final WorkFlowModel workflowDetails,
-                                                     final WorkflowStatus status,
-                                                     final AwsServiceException exception) {
+    public static WorkflowResponse buildServiceErrorResponse(final WorkFlowModel workflowDetails,
+                                                             final WorkflowStatus status,
+                                                             final AwsServiceException exception) {
         AwsErrorDetails errorDetailsObj = exception.awsErrorDetails();
-        OrcaResponse.ErrorDetails errorDetails = OrcaResponse.ErrorDetails
+        WorkflowResponse.ErrorDetails errorDetails = WorkflowResponse.ErrorDetails
                 .builder()
                 .errorCode(errorDetailsObj != null ? errorDetailsObj.errorCode() : null)
                 .serviceMessage(errorDetailsObj != null ? errorDetailsObj.errorMessage() : null)
                 .errorClass(exception.getClass().getName())
                 .build();
 
-        return OrcaResponse.builder()
+        return WorkflowResponse.builder()
                 .namespaceID(workflowDetails.getNamespaceID())
                 .workflowName(workflowDetails.getWorkflowName())
                 .sourceBucketName(getBucketNameOrNull(workflowDetails.getSourceBucketARN()))
@@ -65,24 +65,24 @@ public class OrcaResponseBuilder {
     }
 
     /**
-     * Builds an Orca response for runtime exceptions with HTTP 500 status code.
+     * Builds an Workflow response for runtime exceptions with HTTP 500 status code.
      *
      * @param workflowDetails The workflow model containing required details
      * @param status The status of the workflow
      * @param exception The runtime exception that occurred
-     * @return An OrcaResponse object with runtime error details
+     * @return An WorkflowResponse object with runtime error details
      */
-    public static OrcaResponse buildRuntimeErrorResponse(final WorkFlowModel workflowDetails,
-                                                          final WorkflowStatus status,
-                                                          final RuntimeException exception) {
-        OrcaResponse.ErrorDetails errorDetails = OrcaResponse.ErrorDetails
+    public static WorkflowResponse buildRuntimeErrorResponse(final WorkFlowModel workflowDetails,
+                                                             final WorkflowStatus status,
+                                                             final RuntimeException exception) {
+        WorkflowResponse.ErrorDetails errorDetails = WorkflowResponse.ErrorDetails
                 .builder()
                 .errorCode("INTERNAL_ERROR")
                 .serviceMessage(exception.getMessage())
                 .errorClass(exception.getClass().getName())
                 .build();
 
-        return OrcaResponse.builder()
+        return WorkflowResponse.builder()
                 .namespaceID(workflowDetails.getNamespaceID())
                 .workflowName(workflowDetails.getWorkflowName())
                 .sourceBucketName(getBucketNameOrNull(workflowDetails.getSourceBucketARN()))

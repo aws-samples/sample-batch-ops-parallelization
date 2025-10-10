@@ -11,7 +11,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrcaResponse {
+public class WorkflowResponse {
     //FAILED, FINSIHED, CREATED
     private String status;
     //200, 500, or s3Exception.statusCode()

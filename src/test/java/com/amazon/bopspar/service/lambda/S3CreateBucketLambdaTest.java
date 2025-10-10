@@ -4,13 +4,13 @@ import com.amazon.bopspar.model.InvalidInputException;
 import com.amazon.bopspar.persistence.manager.WorkflowStatus;
 import com.amazon.bopspar.persistence.ddb.WorkflowRepository;
 import com.amazon.bopspar.persistence.model.WorkFlowModel;
-import com.amazon.bopspar.service.requests.OrcaRequest;
+import com.amazon.bopspar.service.requests.WorkflowRequest;
 import com.amazon.bopspar.service.resources.auth.S3ClientFactory;
 import com.amazon.bopspar.service.resources.s3.bucket.S3CreateBucketImpl;
 import com.amazon.bopspar.service.resources.s3.bucket.S3CreateBucketService;
 import com.amazon.bopspar.service.resources.workflow.WorkflowStatusManager;
-import com.amazon.bopspar.service.responses.OrcaResponse;
-import com.amazon.bopspar.service.responses.OrcaResponseBuilder;
+import com.amazon.bopspar.service.responses.WorkflowResponse;
+import com.amazon.bopspar.service.responses.WorkflowResponseBuilder;
 import com.amazonaws.services.lambda.runtime.Context;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -68,9 +68,9 @@ class S3CreateBucketLambdaTest {
 
     @Test
     void testHandleRequest_Success_CreateBucket_SameAccount() {
-        OrcaRequest orcaRequest = new OrcaRequest();
-        orcaRequest.setWorkflowName("testWorkflow");
-        orcaRequest.setNamespaceID("testNamespace");
+        WorkflowRequest workflowRequest = new WorkflowRequest();
+        workflowRequest.setWorkflowName("testWorkflow");
+        workflowRequest.setNamespaceID("testNamespace");
 
 
         WorkFlowModel workflowModel = new WorkFlowModel();
@@ -92,7 +92,7 @@ class S3CreateBucketLambdaTest {
 
 
 
-        s3CreateBucketLambda.handleRequest(orcaRequest, context);
+        s3CreateBucketLambda.handleRequest(workflowRequest, context);
 
         verify(workflowRepository, times(1)).getWorkflow("testWorkflow", "testNamespace");
         verify(workflowRepository, times(1)).updateWorkflow(workflowModel);
@@ -100,9 +100,9 @@ class S3CreateBucketLambdaTest {
     }
     @Test
     void testHandleRequest_Success_CreateBucket_CrossAccount() {
-        OrcaRequest orcaRequest = new OrcaRequest();
-        orcaRequest.setWorkflowName("testWorkflow");
-        orcaRequest.setNamespaceID("testNamespace");
+        WorkflowRequest workflowRequest = new WorkflowRequest();
+        workflowRequest.setWorkflowName("testWorkflow");
+        workflowRequest.setNamespaceID("testNamespace");
 
 
         WorkFlowModel workflowModel = new WorkFlowModel();
@@ -124,7 +124,7 @@ class S3CreateBucketLambdaTest {
 
 
 
-        s3CreateBucketLambda.handleRequest(orcaRequest, context);
+        s3CreateBucketLambda.handleRequest(workflowRequest, context);
 
         verify(workflowRepository, times(1)).getWorkflow("testWorkflow", "testNamespace");
         verify(workflowRepository, times(1)).updateWorkflow(workflowModel);
@@ -133,9 +133,9 @@ class S3CreateBucketLambdaTest {
 
     @Test
     void testHandleRequest_BucketAlreadyExists() {
-        OrcaRequest orcaRequest = new OrcaRequest();
-        orcaRequest.setWorkflowName("testWorkflow");
-        orcaRequest.setNamespaceID("testNamespace");
+        WorkflowRequest workflowRequest = new WorkflowRequest();
+        workflowRequest.setWorkflowName("testWorkflow");
+        workflowRequest.setNamespaceID("testNamespace");
 
         WorkFlowModel workflowModel = new WorkFlowModel();
         workflowModel.setDestBucketARN("arn:aws:s3:::existing-bucket");
@@ -150,7 +150,7 @@ class S3CreateBucketLambdaTest {
         when(s3ClientFactory.createS3Client(anyString(), anyString())).thenReturn(destS3Client);
         when(s3CreateBucketService.checkBucketExists(any(S3Client.class), eq("existing-bucket"))).thenReturn(true);
 
-        OrcaResponse response = s3CreateBucketLambda.handleRequest(orcaRequest, context);
+        WorkflowResponse response = s3CreateBucketLambda.handleRequest(workflowRequest, context);
 
         // Assert that the response indicates the bucket already exists
         assertEquals("CREATED", response.getStatus());
@@ -160,19 +160,19 @@ class S3CreateBucketLambdaTest {
 
     @Test
     void testHandleRequest_InvalidInput() {
-        OrcaRequest orcaRequest = new OrcaRequest();
-        orcaRequest.setWorkflowName(null); // Invalid input
+        WorkflowRequest workflowRequest = new WorkflowRequest();
+        workflowRequest.setWorkflowName(null); // Invalid input
         InvalidInputException thrown = assertThrows(InvalidInputException.class, () ->
-                s3CreateBucketLambda.handleRequest(orcaRequest, null));
+                s3CreateBucketLambda.handleRequest(workflowRequest, null));
 
         assertEquals("Invalid input! WorkflowName and NamespaceID are required.", thrown.getMessage());
     }
 
     @Test
     void testHandleRequest_createBucketS3Exception() {
-        OrcaRequest orcaRequest = new OrcaRequest();
-        orcaRequest.setWorkflowName("testWorkflow");
-        orcaRequest.setNamespaceID("testNamespace");
+        WorkflowRequest workflowRequest = new WorkflowRequest();
+        workflowRequest.setWorkflowName("testWorkflow");
+        workflowRequest.setNamespaceID("testNamespace");
 
         WorkFlowModel workflowModel = new WorkFlowModel();
         workflowModel.setDestBucketARN(null);
@@ -187,7 +187,7 @@ class S3CreateBucketLambdaTest {
                 .when(s3CreateBucketService).createS3Bucket(any(S3Client.class), anyString(), anyString(),
                         anyString());
 
-        OrcaResponse response = s3CreateBucketLambda.handleRequest(orcaRequest, context);
+        WorkflowResponse response = s3CreateBucketLambda.handleRequest(workflowRequest, context);
 
         // Assert that the response indicates the bucket already exists
         assertEquals("FAILED", response.getStatus());
@@ -197,9 +197,9 @@ class S3CreateBucketLambdaTest {
 
     @Test
     void testHandleRequest_RuntimeException() {
-        OrcaRequest orcaRequest = new OrcaRequest();
-        orcaRequest.setWorkflowName("testWorkflow");
-        orcaRequest.setNamespaceID("testNamespace");
+        WorkflowRequest workflowRequest = new WorkflowRequest();
+        workflowRequest.setWorkflowName("testWorkflow");
+        workflowRequest.setNamespaceID("testNamespace");
 
         WorkFlowModel workflowModel = new WorkFlowModel();
         workflowModel.setDestBucketARN(null); // No existing bucket ARN
@@ -214,7 +214,7 @@ class S3CreateBucketLambdaTest {
         when(workflowRepository.getWorkflow("testWorkflow", "testNamespace")).thenReturn(workflowModel);
         when(s3ClientFactory.createS3Client("sourceRoleArn", "us-west-2")).thenThrow(RuntimeException.class);
 
-        OrcaResponse response = s3CreateBucketLambda.handleRequest(orcaRequest, context);
+        WorkflowResponse response = s3CreateBucketLambda.handleRequest(workflowRequest, context);
 
         assertEquals(String.valueOf(WorkflowStatus.FAILED), response.getStatus());
         verify(workflowRepository, times(1)).getWorkflow("testWorkflow", "testNamespace");
@@ -225,18 +225,18 @@ class S3CreateBucketLambdaTest {
 
     @Test
     void testHandleRequest_StoppingWorkflow() {
-        OrcaRequest orcaRequest = new OrcaRequest();
-        orcaRequest.setWorkflowName("testWorkflow");
-        orcaRequest.setNamespaceID("testNamespace");
+        WorkflowRequest workflowRequest = new WorkflowRequest();
+        workflowRequest.setWorkflowName("testWorkflow");
+        workflowRequest.setNamespaceID("testNamespace");
 
         WorkFlowModel workflowDetails = new WorkFlowModel();
         workflowDetails.setStatus(WorkflowStatus.STOPPING.name());
 
         when(workflowRepository.getWorkflow("testWorkflow", "testNamespace")).thenReturn(workflowDetails);
         when(workflowStatusManager.handleStoppingStatus(workflowDetails)).thenReturn(
-                OrcaResponseBuilder.buildSuccessResponse(workflowDetails, WorkflowStatus.STOPPED));
+                WorkflowResponseBuilder.buildSuccessResponse(workflowDetails, WorkflowStatus.STOPPED));
 
-        OrcaResponse response = assertDoesNotThrow(() -> s3CreateBucketLambda.handleRequest(orcaRequest, null));
+        WorkflowResponse response = assertDoesNotThrow(() -> s3CreateBucketLambda.handleRequest(workflowRequest, null));
 
         verify(workflowRepository, times(1)).getWorkflow("testWorkflow", "testNamespace");
         verify(workflowStatusManager, times(1)).handleStoppingStatus(workflowDetails);

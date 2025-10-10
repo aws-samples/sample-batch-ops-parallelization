@@ -11,7 +11,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrcaRequest {
+public class WorkflowRequest {
     private String  workflowName;
     private String  namespaceID;
     private String taskToken;

@@ -3,8 +3,8 @@ package com.amazon.bopspar.service.resources.workflow;
 import com.amazon.bopspar.persistence.manager.WorkflowStatus;
 import com.amazon.bopspar.persistence.ddb.WorkflowRepository;
 import com.amazon.bopspar.persistence.model.WorkFlowModel;
-import com.amazon.bopspar.service.responses.OrcaResponse;
-import com.amazon.bopspar.service.responses.OrcaResponseBuilder;
+import com.amazon.bopspar.service.responses.WorkflowResponse;
+import com.amazon.bopspar.service.responses.WorkflowResponseBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,16 +25,16 @@ public class WorkflowStatusManager {
     /**
      * Method to handle updating the workflow status and state when a workflow is stopping.
      * @param workflowModel workflowModel containing the workflow status and state
-     * @return OrcaResponse containing the updated workflow status and state
+     * @return WorkflowResponse containing the updated workflow status and state
      */
-    public OrcaResponse handleStoppingStatus(final WorkFlowModel workflowModel) {
+    public WorkflowResponse handleStoppingStatus(final WorkFlowModel workflowModel) {
         LOGGER.info("Workflow is in STOPPING state, cancelling the workflow. WorkflowName: {}, NamespaceId: {}",
                 workflowModel.getWorkflowName(),
                 workflowModel.getNamespaceID());
         workflowModel.setStatus(WorkflowStatus.STOPPED.name());
         workflowModel.setState(WorkflowState.CANCELLED.name());
         workflowRepository.updateWorkflow(workflowModel);
-        return OrcaResponseBuilder.buildSuccessResponse(workflowModel, WorkflowStatus.STOPPED);
+        return WorkflowResponseBuilder.buildSuccessResponse(workflowModel, WorkflowStatus.STOPPED);
     }
 
     /**

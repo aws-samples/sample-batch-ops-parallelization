@@ -21,10 +21,9 @@ import com.amazon.bopspar.persistence.ddb.WorkflowRepository;
 import com.amazon.bopspar.persistence.model.WorkFlowModel;
 import com.amazon.bopspar.persistence.utils.InputValidator;
 import com.amazon.bopspar.persistence.utils.ModelConverter;
-import com.amazon.bopspar.service.resources.workflow.WorkflowState;
 import com.amazon.bopspar.service.resources.workflow.WorkflowStateMachine;
-import com.amazon.bopspar.service.responses.OrcaResponse;
-import com.amazon.bopspar.service.responses.OrcaResponseBuilder;
+import com.amazon.bopspar.service.responses.WorkflowResponse;
+import com.amazon.bopspar.service.responses.WorkflowResponseBuilder;
 import com.amazonaws.services.dynamodbv2.model.AmazonDynamoDBException;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.google.gson.Gson;
@@ -274,12 +273,12 @@ public class WorkflowManagerCRUDImpl implements WorkflowManager {
             || currentStatus.equals(String.valueOf(WorkflowStatus.RESUMING))) {
             try {
                 if (currentStatus.equals(String.valueOf(WorkflowStatus.WAITING))) {
-                    log.info("Resuming Orca workflow for {}", workflowModel.toString());
+                    log.info("Resuming Workflow workflow for {}", workflowModel.toString());
                     workflowModel.setStatus(String.valueOf(WorkflowStatus.RESUMING));
                 }
                 workflowRepository.updateWorkflow(workflowModel);
 
-                OrcaResponse response = OrcaResponseBuilder.buildSuccessResponse(workflowModel, WorkflowStatus.RUNNING);
+                WorkflowResponse response = WorkflowResponseBuilder.buildSuccessResponse(workflowModel, WorkflowStatus.RUNNING);
                 sfnClient.sendTaskSuccess(SendTaskSuccessRequest.builder()
                     .taskToken(taskToken)
                     .output(gson.toJson(response))
@@ -300,10 +299,10 @@ public class WorkflowManagerCRUDImpl implements WorkflowManager {
                 throw new InvalidInputException(errMsg, cafe);
             } catch (final AmazonDynamoDBException dynamoDBException) {
                 throw new AWSServiceException(dynamoDBException.getMessage(), dynamoDBException);
-            } catch (Exception orcaException) {
+            } catch (Exception workflowException) {
                 String errMsg = String.format("The workflow with workflowName: %s, namespaceID: %s "
-                    + "cannot be started due to an Orca exception", workFlowName, nameSpaceID);
-                throw new AWSServiceException(errMsg, orcaException);
+                    + "cannot be started due to an Workflow exception", workFlowName, nameSpaceID);
+                throw new AWSServiceException(errMsg, workflowException);
             }
         } else {
             String errMsg = String.format("The workflow with workflowName: %s, namespaceID: %s, "

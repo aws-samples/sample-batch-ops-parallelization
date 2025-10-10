@@ -5,12 +5,12 @@ import com.amazon.bopspar.persistence.ddb.WorkflowRepository;
 import com.amazon.bopspar.persistence.model.WorkFlowModel;
 import com.amazon.bopspar.service.dagger.DaggerLambdaComponent;
 import com.amazon.bopspar.service.dagger.LambdaComponent;
-import com.amazon.bopspar.service.requests.OrcaRequest;
+import com.amazon.bopspar.service.requests.WorkflowRequest;
 import com.amazon.bopspar.service.resources.auth.S3ClientFactory;
 import com.amazon.bopspar.service.resources.replication.S3PostReplicationService;
-import com.amazon.bopspar.service.responses.OrcaResponse;
-import com.amazon.bopspar.service.responses.OrcaResponseBuilder;
-import com.amazon.bopspar.service.validator.OrcaRequestValidator;
+import com.amazon.bopspar.service.responses.WorkflowResponse;
+import com.amazon.bopspar.service.responses.WorkflowResponseBuilder;
+import com.amazon.bopspar.service.validator.WorkflowRequestValidator;
 import com.amazon.bopspar.service.validator.WorkflowValidator;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
@@ -25,7 +25,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 /**
  * Lambda to process post-replication steps after migration/CRR is complete.
  */
-public class S3PostReplicationLambda implements RequestHandler<OrcaRequest, OrcaResponse> {
+public class S3PostReplicationLambda implements RequestHandler<WorkflowRequest, WorkflowResponse> {
     private static final Logger LOGGER = LogManager.getLogger(S3PostReplicationLambda.class);
     private final WorkflowRepository workflowRepository;
     private final S3ClientFactory s3ClientFactory;
@@ -48,11 +48,11 @@ public class S3PostReplicationLambda implements RequestHandler<OrcaRequest, Orca
     }
 
     @Override
-    public OrcaResponse handleRequest(final OrcaRequest orcaRequest, final Context context) {
-        OrcaRequestValidator.validateOrcaRequest(orcaRequest);
-        final String workflowName = orcaRequest.getWorkflowName();
-        final String namespaceID = orcaRequest.getNamespaceID();
-        LOGGER.info("Orca Request: {} {}", workflowName, namespaceID);
+    public WorkflowResponse handleRequest(final WorkflowRequest workflowRequest, final Context context) {
+        WorkflowRequestValidator.validateWorkflowRequest(workflowRequest);
+        final String workflowName = workflowRequest.getWorkflowName();
+        final String namespaceID = workflowRequest.getNamespaceID();
+        LOGGER.info("Workflow Request: {} {}", workflowName, namespaceID);
 
         //Get workflow details
         final WorkFlowModel workflowDetails = workflowRepository.getWorkflow(workflowName, namespaceID);
@@ -100,12 +100,12 @@ public class S3PostReplicationLambda implements RequestHandler<OrcaRequest, Orca
             workflowDetails.setStatus(String.valueOf(WorkflowStatus.FAILED));
             workflowRepository.updateWorkflow(workflowDetails);
 
-            // Send Failed Orca Response
-            return OrcaResponseBuilder.buildRuntimeErrorResponse(workflowDetails,
+            // Send Failed Workflow Response
+            return WorkflowResponseBuilder.buildRuntimeErrorResponse(workflowDetails,
                     WorkflowStatus.FAILED, runtimeException);
         }
 
-        // Send Success Orca Response
-        return OrcaResponseBuilder.buildSuccessResponse(workflowDetails, WorkflowStatus.FINISHED);
+        // Send Success Workflow Response
+        return WorkflowResponseBuilder.buildSuccessResponse(workflowDetails, WorkflowStatus.FINISHED);
     }
 }

@@ -5,13 +5,13 @@ import com.amazon.bopspar.persistence.manager.WorkflowStatus;
 import com.amazon.bopspar.persistence.ddb.WorkflowRepository;
 import com.amazon.bopspar.persistence.model.RuntimeConfig;
 import com.amazon.bopspar.persistence.model.WorkFlowModel;
-import com.amazon.bopspar.service.requests.OrcaRequest;
+import com.amazon.bopspar.service.requests.WorkflowRequest;
 import com.amazon.bopspar.service.resources.auth.S3ClientFactory;
 import com.amazon.bopspar.service.resources.s3.bucket.S3CreateBucketService;
 import com.amazon.bopspar.service.resources.s3.configuration.S3ConfigurationService;
 import com.amazon.bopspar.service.resources.workflow.WorkflowStatusManager;
-import com.amazon.bopspar.service.responses.OrcaResponse;
-import com.amazon.bopspar.service.responses.OrcaResponseBuilder;
+import com.amazon.bopspar.service.responses.WorkflowResponse;
+import com.amazon.bopspar.service.responses.WorkflowResponseBuilder;
 import com.amazonaws.services.lambda.runtime.Context;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,7 +44,7 @@ class S3ConfigureBucketLambdaTest{
     private WorkflowRepository workflowRepository;
     private Context context;
     private WorkFlowModel workflowModel;
-    private OrcaRequest orcaRequest;
+    private WorkflowRequest workflowRequest;
     private S3ClientFactory s3ClientFactory;
     private S3Client sourceS3Client;
     private S3Client destS3Client;
@@ -77,7 +77,7 @@ class S3ConfigureBucketLambdaTest{
         workflowStatusManager = mock(WorkflowStatusManager.class);
         s3ConfigureBucketLambda = new S3ConfigureBucketLambda(workflowRepository, s3ClientFactory, s3ConfigurationService, s3CreateBucketService, workflowStatusManager);
 
-        //Workflow Model and Orca
+        //Workflow Model and Workflow
         workflowModel = new WorkFlowModel();
         workflowModel.setSourceBucketARN(TEST_SOURCE_BUCKET);
         workflowModel.setSourceRoleARN(TEST_SOURCE_ROLE);
@@ -87,9 +87,9 @@ class S3ConfigureBucketLambdaTest{
         workflowModel.setDestRegion(DEST_REGION);
 
 
-        orcaRequest = new OrcaRequest();
-        orcaRequest.setWorkflowName(TEST_WORKFLOW_NAME);
-        orcaRequest.setNamespaceID(TEST_NAMESPACE_ID);
+        workflowRequest = new WorkflowRequest();
+        workflowRequest.setWorkflowName(TEST_WORKFLOW_NAME);
+        workflowRequest.setNamespaceID(TEST_NAMESPACE_ID);
         when(workflowRepository.getWorkflow(TEST_WORKFLOW_NAME, TEST_NAMESPACE_ID)).thenReturn(workflowModel);
 
     }
@@ -113,7 +113,7 @@ class S3ConfigureBucketLambdaTest{
                 any(S3Client.class), anyString(), anyString());
         doNothing().when(s3ConfigurationService).modifyBucketLifecycleRulesStatus(any(S3Client.class), any(String.class), any(ExpirationStatus.class));
 
-        s3ConfigureBucketLambda.handleRequest(orcaRequest, context);
+        s3ConfigureBucketLambda.handleRequest(workflowRequest, context);
         verify(workflowRepository, times(1)).getWorkflow(TEST_WORKFLOW_NAME, TEST_NAMESPACE_ID);
         verify(workflowRepository, times(1)).updateWorkflow(workflowModel);
         verify(s3ConfigurationService, times(1)).saveConfiguration(any(S3Client.class),
@@ -132,7 +132,7 @@ class S3ConfigureBucketLambdaTest{
 
         when(s3CreateBucketService.checkBucketExists(any(S3Client.class), anyString())).thenReturn(true);
 
-        s3ConfigureBucketLambda.handleRequest(orcaRequest, context);
+        s3ConfigureBucketLambda.handleRequest(workflowRequest, context);
 
         verify(s3ConfigurationService, never()).configureBucketOwnershipControls(
                 any(S3Client.class),
@@ -150,7 +150,7 @@ class S3ConfigureBucketLambdaTest{
 
         when(s3CreateBucketService.checkBucketExists(any(S3Client.class), anyString())).thenReturn(true);
 
-        s3ConfigureBucketLambda.handleRequest(orcaRequest, context);
+        s3ConfigureBucketLambda.handleRequest(workflowRequest, context);
 
         verify(s3ConfigurationService, times(1)).configureBucketOwnershipControls(
                 any(S3Client.class),
@@ -166,7 +166,7 @@ class S3ConfigureBucketLambdaTest{
 
         when(s3CreateBucketService.checkBucketExists(any(S3Client.class), anyString())).thenReturn(true);
 
-        s3ConfigureBucketLambda.handleRequest(orcaRequest, context);
+        s3ConfigureBucketLambda.handleRequest(workflowRequest, context);
 
         verify(s3ConfigurationService, times(1)).configureBucketOwnershipControls(
                 any(S3Client.class),
@@ -182,7 +182,7 @@ class S3ConfigureBucketLambdaTest{
 
         when(s3CreateBucketService.checkBucketExists(any(S3Client.class), anyString())).thenReturn(true);
 
-        s3ConfigureBucketLambda.handleRequest(orcaRequest, context);
+        s3ConfigureBucketLambda.handleRequest(workflowRequest, context);
 
         verify(s3ConfigurationService, times(1)).configureBucketOwnershipControls(
                 any(S3Client.class),
@@ -197,17 +197,17 @@ class S3ConfigureBucketLambdaTest{
         when(s3ClientFactory.createS3Client(TEST_DEST_ROLE, DEST_REGION)).thenReturn(destS3Client);
         when(s3ClientFactory.createS3Client(TEST_SOURCE_ROLE, SOURCE_REGION)).thenReturn(sourceS3Client);
 
-        s3ConfigureBucketLambda.handleRequest(orcaRequest, context);
+        s3ConfigureBucketLambda.handleRequest(workflowRequest, context);
         verify(workflowRepository, times(1)).getWorkflow(TEST_WORKFLOW_NAME, TEST_NAMESPACE_ID);
 
     }
 
     @Test
     void testHandleRequest_InvalidInputException() {
-        OrcaRequest orcaRequest = new OrcaRequest();
-        orcaRequest.setWorkflowName(null); // Invalid input
+        WorkflowRequest workflowRequest = new WorkflowRequest();
+        workflowRequest.setWorkflowName(null); // Invalid input
         InvalidInputException thrown = assertThrows(InvalidInputException.class, () ->
-                s3ConfigureBucketLambda.handleRequest(orcaRequest, null));
+                s3ConfigureBucketLambda.handleRequest(workflowRequest, null));
 
         assertEquals("Invalid input! WorkflowName and NamespaceID are required.", thrown.getMessage());
     }
@@ -222,7 +222,7 @@ class S3ConfigureBucketLambdaTest{
         doThrow(S3Exception.builder().statusCode(500).message("S3 error").build())
                 .when(s3ConfigurationService).saveConfiguration(any(S3Client.class), any(S3Client.class), anyString(), anyString());
 
-        OrcaResponse response = s3ConfigureBucketLambda.handleRequest(orcaRequest, context);
+        WorkflowResponse response = s3ConfigureBucketLambda.handleRequest(workflowRequest, context);
 
         Assertions.assertEquals("FAILED", response.getStatus());
         assertEquals(String.valueOf(WorkflowStatus.FAILED), workflowModel.getStatus());
@@ -249,7 +249,7 @@ class S3ConfigureBucketLambdaTest{
                 .when(s3ConfigurationService)
                 .configureServerAccessLogging(any(), any(), any(), any());
 
-        OrcaResponse response = s3ConfigureBucketLambda.handleRequest(orcaRequest, context);
+        WorkflowResponse response = s3ConfigureBucketLambda.handleRequest(workflowRequest, context);
 
         assertNotNull(response);
         assertEquals("FAILED", response.getStatus());
@@ -265,7 +265,7 @@ class S3ConfigureBucketLambdaTest{
         doThrow(S3Exception.builder().statusCode(500).message("S3 error").build())
                 .when(s3ConfigurationService).saveConfiguration(any(S3Client.class), any(S3Client.class), anyString(), anyString());
 
-        OrcaResponse response = s3ConfigureBucketLambda.handleRequest(orcaRequest, context);
+        WorkflowResponse response = s3ConfigureBucketLambda.handleRequest(workflowRequest, context);
 
 
         Assertions.assertEquals("FAILED", response.getStatus());
@@ -277,7 +277,7 @@ class S3ConfigureBucketLambdaTest{
     void testHandleRequest_RuntimeException() {
         when(s3ClientFactory.createS3Client(TEST_SOURCE_ROLE, SOURCE_REGION)).thenThrow(RuntimeException.class);
 
-        OrcaResponse response = s3ConfigureBucketLambda.handleRequest(orcaRequest, context);
+        WorkflowResponse response = s3ConfigureBucketLambda.handleRequest(workflowRequest, context);
 
         assertEquals(String.valueOf(WorkflowStatus.FAILED), response.getStatus());
         assertEquals(String.valueOf(WorkflowStatus.FAILED), workflowModel.getStatus());
@@ -287,13 +287,13 @@ class S3ConfigureBucketLambdaTest{
     @Test
     void testHandleRequest_NullNamespaceID() {
         // Create request with null namespaceID
-        OrcaRequest orcaRequest = new OrcaRequest();
-        orcaRequest.setWorkflowName(TEST_WORKFLOW_NAME);
-        orcaRequest.setNamespaceID(null);
+        WorkflowRequest workflowRequest = new WorkflowRequest();
+        workflowRequest.setWorkflowName(TEST_WORKFLOW_NAME);
+        workflowRequest.setNamespaceID(null);
 
         // Assert that InvalidInputException is thrown with correct message
         InvalidInputException thrown = assertThrows(InvalidInputException.class, () ->
-                s3ConfigureBucketLambda.handleRequest(orcaRequest, null));
+                s3ConfigureBucketLambda.handleRequest(workflowRequest, null));
 
         assertEquals("Invalid input! WorkflowName and NamespaceID are required.",
                 thrown.getMessage());
@@ -302,13 +302,13 @@ class S3ConfigureBucketLambdaTest{
     @Test
     void testHandleRequest_EmptyNamespaceID() {
         // Create request with empty namespaceID
-        OrcaRequest orcaRequest = new OrcaRequest();
-        orcaRequest.setWorkflowName(TEST_WORKFLOW_NAME);
-        orcaRequest.setNamespaceID("");
+        WorkflowRequest workflowRequest = new WorkflowRequest();
+        workflowRequest.setWorkflowName(TEST_WORKFLOW_NAME);
+        workflowRequest.setNamespaceID("");
 
         // Assert that InvalidInputException is thrown with correct message
         InvalidInputException thrown = assertThrows(InvalidInputException.class, () ->
-                s3ConfigureBucketLambda.handleRequest(orcaRequest, null));
+                s3ConfigureBucketLambda.handleRequest(workflowRequest, null));
 
         assertEquals("Invalid input! WorkflowName and NamespaceID are required.",
                 thrown.getMessage());
@@ -316,17 +316,17 @@ class S3ConfigureBucketLambdaTest{
 
     @Test
     void testHandleRequest_StoppingWorkflow() {
-        OrcaRequest orcaRequest = new OrcaRequest();
-        orcaRequest.setWorkflowName("testWorkflow");
-        orcaRequest.setNamespaceID("testNamespace");
+        WorkflowRequest workflowRequest = new WorkflowRequest();
+        workflowRequest.setWorkflowName("testWorkflow");
+        workflowRequest.setNamespaceID("testNamespace");
 
         workflowModel.setStatus(WorkflowStatus.STOPPING.name());
 
         when(workflowRepository.getWorkflow("testWorkflow", "testNamespace")).thenReturn(workflowModel);
         when(workflowStatusManager.handleStoppingStatus(workflowModel)).thenReturn(
-                OrcaResponseBuilder.buildSuccessResponse(workflowModel, WorkflowStatus.STOPPED));
+                WorkflowResponseBuilder.buildSuccessResponse(workflowModel, WorkflowStatus.STOPPED));
 
-        OrcaResponse response = assertDoesNotThrow(() -> s3ConfigureBucketLambda.handleRequest(orcaRequest, null));
+        WorkflowResponse response = assertDoesNotThrow(() -> s3ConfigureBucketLambda.handleRequest(workflowRequest, null));
 
         verify(workflowRepository, times(1)).getWorkflow("testWorkflow", "testNamespace");
         verify(workflowStatusManager, times(1)).handleStoppingStatus(workflowModel);
