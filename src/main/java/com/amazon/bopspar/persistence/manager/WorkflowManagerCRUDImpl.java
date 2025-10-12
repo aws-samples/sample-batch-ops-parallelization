@@ -273,7 +273,7 @@ public class WorkflowManagerCRUDImpl implements WorkflowManager {
             || currentStatus.equals(String.valueOf(WorkflowStatus.RESUMING))) {
             try {
                 if (currentStatus.equals(String.valueOf(WorkflowStatus.WAITING))) {
-                    log.info("Resuming Workflow workflow for {}", workflowModel.toString());
+                    log.info("Resuming Workflow for {}", workflowModel.toString());
                     workflowModel.setStatus(String.valueOf(WorkflowStatus.RESUMING));
                 }
                 workflowRepository.updateWorkflow(workflowModel);

@@ -1,2 +1,2 @@
-rootProject.name = "S3AExternalization"
+rootProject.name = "BOPSParallelization"
 

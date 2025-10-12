@@ -37,7 +37,7 @@ cd lib
 cdk list 
 
 # Deploying the Service Stack deploys all other stacks (except the code pipeline)
-npx cdk deploy PipelineStack/S3AExternalization-dev/ServiceStack-<AWS_ACCOUNT>-us-west-2-dev
+npx cdk deploy PipelineStack/BOPSParallelization-dev/ServiceStack-<AWS_ACCOUNT>-us-west-2-dev
 ```
 
 ### Issues

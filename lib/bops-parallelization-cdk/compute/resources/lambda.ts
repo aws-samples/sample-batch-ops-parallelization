@@ -51,7 +51,7 @@ export class LambdaResource extends Construct {
       handler: props.handler,
       runtime: Runtime.JAVA_17,
       functionName: props.functionName,
-      code:  Code.fromAsset('../build/libs/S3AExternalization-1.0-SNAPSHOT-all.jar'),
+      code:  Code.fromAsset('../build/libs/BOPSParallelization-1.0-SNAPSHOT-all.jar'),
       role: this.lambdaRole,
       environmentEncryption: encryptionKey,
       logGroup: new LogGroup(this, `LogGroup`, {

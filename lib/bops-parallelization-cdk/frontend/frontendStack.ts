@@ -10,7 +10,7 @@ export class FrontendStack extends Stack {
         super(scope, id, props);
 
         const s3Bucket = new Bucket(this, "S3Bucket", {
-            bucketName: `s3a-externalization-${props.env?.account}`,
+            bucketName: `bops-parallelization-${props.env?.account}`,
             blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
             publicReadAccess: false,
             removalPolicy: RemovalPolicy.DESTROY,

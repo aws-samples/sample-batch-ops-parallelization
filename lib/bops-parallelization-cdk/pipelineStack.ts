@@ -39,7 +39,7 @@ export class PipelineStack extends Stack {
                     conditions: {
                         StringEquals: {
                             'aws:PrincipalTag/GitLab:Group': "s3a",
-                            'aws:PrincipalTag/GitLab:Project': "s3a-externalization"
+                            'aws:PrincipalTag/GitLab:Project': "bops-parallelization"
                         }
                     }
                 }),
@@ -70,7 +70,7 @@ export class PipelineStack extends Stack {
         const pipeline = new CodePipeline(this, "S3AExternlization", {
             pipelineName: "S3AExternlizationPipeline",
             synth: new ShellStep("Synth", {
-                input: CodePipelineSource.s3(s3Bucket, "cdk/s3aexternalization.zip"),
+                input: CodePipelineSource.s3(s3Bucket, "cdk/bopsparallelization.zip"),
                 commands: [
                     "cd lib",
                     "npm ci",
@@ -81,7 +81,7 @@ export class PipelineStack extends Stack {
         })
 
         const pipelineStages = DEPLOYMENT_ENVIRONMENTS.forEach((environment) => {
-            pipeline.addStage(new PipelineStage(this, `S3AExternalization-${environment.stage}`, {
+            pipeline.addStage(new PipelineStage(this, `BOPSParallelization-${environment.stage}`, {
                 env: environment,
                 stage: environment.stage
             }))

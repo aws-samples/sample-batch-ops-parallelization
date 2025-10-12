@@ -17,7 +17,7 @@ export class GlueStack extends Stack {
     this.glueJobRole = props.glueJobRole;
 
     const etlScript = new aws_s3_assets.Asset(this, 'ETLScript', {
-      path: './s3-externalized-cdk/glue/assets/manifest-split-job.py',
+      path: './bops-parallelization-cdk/glue/assets/manifest-split-job.py',
     });
 
     // Create the Glue job using CfnJob

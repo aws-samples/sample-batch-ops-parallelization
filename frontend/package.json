@@ -1,5 +1,5 @@
 {
-  "name": "s3a-externalization-ui",
+  "name": "bops-parallelization-ui",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "publish": "aws s3 cp ./dist s3://s3a-externalization-111122223333 --recursive"
+    "publish": "aws s3 cp ./dist s3://bops-parallelization-111122223333 --recursive"
   },
   "dependencies": {
     "@cloudscape-design/components": "^3.0.979",
