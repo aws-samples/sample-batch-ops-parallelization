@@ -12,9 +12,8 @@ import Box from '@cloudscape-design/components/box'
 import Spinner from '@cloudscape-design/components/spinner'
 import Button from '@cloudscape-design/components/button'
 import StatusIndicator from '@cloudscape-design/components/status-indicator'
-import Flashbar from '@cloudscape-design/components/flashbar'
 import Modal from '@cloudscape-design/components/modal'
-import { getStatusIndicator, toWorkflowViewFromWorkflow, getStatusPopoverContent, getStatusPopoverHeader } from '../utils/utils'
+import { getStatusIndicator, toWorkflowViewFromWorkflow } from '../utils/utils'
 import { Link } from 'react-router-dom'
 import type { FlashbarProps } from '@cloudscape-design/components/flashbar'
 
@@ -99,44 +98,6 @@ function ViewWorkflow({ namespaceID, workflowName, onBack, addNotification }: Vi
     }
   };
 
-  const handleSendControlCommand = async (namespaceID: string, workflowName: string, notificationID: string) => {
-    try {
-      setIsStartWorkflowLoading(true);
-      await workflowService.sendControlCommand(namespaceID, workflowName, notificationID);
-
-      // Show success notification
-      if (addNotification) {
-        addNotification({
-          type: 'success',
-          header: 'Success',
-          content: 'Successfully acknowledged stop source traffic!',
-          id: 'send-control-command-success',
-          dismissible: true,
-          dismissLabel: 'Dismiss message'
-        });
-      }
-
-      // Refresh workflow data to get updated status
-      fetchWorkflow(namespaceID, workflowName);
-    } catch (err) {
-      console.error('Error sending control command:', err);
-
-      // Show error notification
-      if (addNotification) {
-        addNotification({
-          type: 'error',
-          header: 'Error',
-          content: 'Failed to acknowledge stop source traffic. Please try again.',
-          id: 'send-control-command-error',
-          dismissible: true,
-          dismissLabel: 'Dismiss message'
-        });
-      }
-    } finally {
-      setIsStartWorkflowLoading(false);
-    }
-  };
-
   if (loading) {
     return (
       <Container>
@@ -171,19 +132,6 @@ function ViewWorkflow({ namespaceID, workflowName, onBack, addNotification }: Vi
   return (
     <Container>
       <SpaceBetween size="l">
-        {workflow.status === "WAITING" && (
-          <Flashbar
-            items={[
-              {
-                type: "warning",
-                header: getStatusPopoverHeader(workflow.status),
-                content: getStatusPopoverContent(workflow.status),
-                id: "waiting-status-warning",
-                dismissible: false
-              }
-            ]}
-          />
-        )}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Button onClick={onBack} iconName="arrow-left">Back to List</Button>
           <SpaceBetween direction="horizontal" size="xs">
@@ -211,17 +159,6 @@ function ViewWorkflow({ namespaceID, workflowName, onBack, addNotification }: Vi
                 disabled={isStartWorkflowLoading}
               >
                 Start workflow
-              </Button>
-            )}
-            {workflow.status === "WAITING" && (
-              <Button
-                onClick={() => {
-                  handleSendControlCommand(namespaceID, workflowName, "STOP_SOURCE_TRAFFIC_ACK");
-                }}
-                loading={isStartWorkflowLoading}
-                disabled={isStartWorkflowLoading}
-              >
-                Acknowledge stop source traffic
               </Button>
             )}
             <Button

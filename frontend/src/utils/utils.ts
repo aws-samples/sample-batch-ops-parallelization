@@ -7,25 +7,9 @@ export const getStatusIndicator = (status: string) => {
         case 'RUNNING': return 'in-progress';
         case 'FINISHED': return 'success';
         case 'FAILED': return 'error';
-        case 'WAITING': return 'warning';
         default: return 'info';
     }
 }
-
-export const getStatusPopoverContent = (status: string) => {
-    switch (status) {
-        case 'WAITING': return 'Stop traffic to your source bucket and acknowledge to continue your migration.';
-        default: return;
-    }
-}
-
-export const getStatusPopoverHeader = (status: string) => {
-    switch (status) {
-        case 'WAITING': return 'Migration waiting';
-        default: return;
-    }
-}
-
 
 export const toWorkflowFromCreateWorkflowRequest = (request: CreateWorkflowRequest): Workflow => {
     return {

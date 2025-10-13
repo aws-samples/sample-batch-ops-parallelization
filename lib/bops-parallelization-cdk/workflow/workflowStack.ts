@@ -49,24 +49,6 @@ export class WorkflowStack extends Stack {
             outputPath: '$.Payload'
         });
 
-        const waitForStopSourceTrafficAckTask = new LambdaInvoke(this, 'WaitForStopSourceTrafficAckTask', {
-            stateName: 'WaitForStopSourceTrafficAck',
-            lambdaFunction: lambdas.waitForCustomerAckLambda.lambdaFunction,
-            integrationPattern: IntegrationPattern.WAIT_FOR_TASK_TOKEN,
-            payload: TaskInput.fromObject({
-                workflowName: JsonPath.stringAt('$.workflowName'),
-                namespaceID: JsonPath.stringAt('$.namespaceID'),
-                taskToken: JsonPath.taskToken
-            }),
-            outputPath: '$'
-        });
-
-        const s3MonitorLiveReplicationTask = new LambdaInvoke(this, 'S3MonitorLiveReplicationTask', {
-            stateName: 'MonitorLiveReplication',
-            lambdaFunction: lambdas.s3MonitorLambda.lambdaFunction,
-            outputPath: '$.Payload'
-        });
-
         const s3PostReplicationTask = new LambdaInvoke(this, 'S3PostReplicationTask', {
             stateName: 'PostReplication',
             lambdaFunction: lambdas.s3PostReplicationLambda.lambdaFunction,
@@ -77,20 +59,11 @@ export class WorkflowStack extends Stack {
             time: WaitTime.duration(Duration.seconds(60))
         });
 
-        const waitBeforeCrrMonitoring = new Wait(this, 'WaitBeforeCrrLiveMonitoring', {
-            time: WaitTime.duration(Duration.seconds(900))
-        });
-
-        const waitForCrrComplete = new Wait(this, 'WaitForCrrCompleteSignal', {
-            time: WaitTime.duration(Duration.seconds(60))
-        });
-
         const closeWorkflow = new Pass(this, 'CloseWorkflow');
         const createBucketChoice = new Choice(this, 'Check S3CreateBucket response');
         const configureLambdaChoice = new Choice(this, 'Check ConfigureLambda response');
         const replicationSetupChoice = new Choice(this, 'Check S3ReplicationSetupLambda response');
         const monitorChoice = new Choice(this, 'Check S3Monitor response');
-        const monitorLiveReplicationChoice = new Choice(this, 'Check MonitorLiveReplication response');
         const startAtChoice = new Choice(this, 'Check startAt state');
 
         const mainPath = s3CreateBucketTask
@@ -100,7 +73,10 @@ export class WorkflowStack extends Stack {
 
         const workflowChain = Chain
             .start(startAtChoice
-                .when(Condition.stringEquals("$.startAt", "SetupReplication"), replicationPath)
+                .when(Condition.and(
+                    Condition.isPresent('$.startAt'),
+                    Condition.stringEquals('$.startAt', "SetupReplication")
+                ), replicationPath)
                 .otherwise(mainPath)
             );
 
@@ -131,30 +107,11 @@ export class WorkflowStack extends Stack {
                 Condition.stringEquals('$.status', 'STOPPING')
             ), waitForBackfillComplete)
             .when(Condition.stringEquals('$.status', 'STOPPED'), s3PostReplicationTask)
-            .when(Condition.stringEquals('$.status', 'WAITING'), waitForStopSourceTrafficAckTask)
+            .when(Condition.stringEquals('$.status', 'WAITING'), s3PostReplicationTask)
             .otherwise(closeWorkflow);
 
         waitForBackfillComplete
             .next(s3MonitorBackfillTask);
-
-        waitForStopSourceTrafficAckTask
-            .next(waitBeforeCrrMonitoring)
-            .next(s3MonitorLiveReplicationTask)
-            .next(monitorLiveReplicationChoice);
-
-        monitorLiveReplicationChoice
-            .when(Condition.or(
-                Condition.stringEquals('$.status', 'FINISHED'),
-                Condition.stringEquals('$.status', 'STOPPED')
-            ), s3PostReplicationTask)
-            .when(Condition.or(
-                Condition.stringEquals('$.status', 'RUNNING'),
-                Condition.stringEquals('$.status', 'STOPPING')
-            ), waitForCrrComplete)
-            .otherwise(closeWorkflow);
-
-        waitForCrrComplete
-            .next(s3MonitorLiveReplicationTask);
 
         s3PostReplicationTask
             .next(closeWorkflow);

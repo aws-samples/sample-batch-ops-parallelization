@@ -10,12 +10,11 @@ import Button from '@cloudscape-design/components/button';
 import ButtonDropdown from '@cloudscape-design/components/button-dropdown';
 import Spinner from '@cloudscape-design/components/spinner';
 import StatusIndicator from '@cloudscape-design/components/status-indicator';
-import { getStatusIndicator, getStatusPopoverContent, getStatusPopoverHeader, toWorkflowViewFromWorkflow } from '../utils/utils';
+import { getStatusIndicator, toWorkflowViewFromWorkflow } from '../utils/utils';
 import Alert from '@cloudscape-design/components/alert';
 import type { FlashbarProps } from '@cloudscape-design/components/flashbar';
 import Header from '@cloudscape-design/components/header';
 import TextFilter from '@cloudscape-design/components/text-filter';
-import { Popover } from '@cloudscape-design/components';
 
 interface ListWorkflowsProps {
   onViewWorkflow: (namespaceID: string, workflowName: string) => void;
@@ -48,7 +47,6 @@ const ListWorkflows: React.FC<ListWorkflowsProps> = ({ onViewWorkflow, addNotifi
   const [error, setError] = useState<string | null>(null);
   const [startingWorkflow, setStartingWorkflow] = useState<string | null>(null);
   const [startWorkflowError, setStartWorkflowError] = useState<string | null>(null);
-  const [sendingControlCommand, setSendingControlCommand] = useState<string | null>(null);
   const [sendControlCommandError, setSendControlCommandError] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<WorkflowView[]>([]);
   const [filteringText, setFilteringText] = useState('');
@@ -160,8 +158,7 @@ const ListWorkflows: React.FC<ListWorkflowsProps> = ({ onViewWorkflow, addNotifi
     
     const selectedWorkflow = selectedItems[0];
     const isStarting = startingWorkflow === `${selectedWorkflow.namespaceID}:${selectedWorkflow.workflowName}`;
-    const isSendingCommand = sendingControlCommand === `${selectedWorkflow.namespaceID}:${selectedWorkflow.workflowName}`;
-    
+
     // Start Workflow action - only when status is READY
     if (selectedWorkflow.status === 'READY') {
       items.push({
@@ -174,70 +171,10 @@ const ListWorkflows: React.FC<ListWorkflowsProps> = ({ onViewWorkflow, addNotifi
         }
       });
     }
-    
-    // Acknowledge stop source traffic - only when status is WAITING
-    if (selectedWorkflow.status === 'WAITING') {
-      items.push({
-        id: 'acknowledge-stop',
-        text: 'Acknowledge stop source traffic',
-        disabled: isSendingCommand,
-        onClick: () => {
-          console.log('Acknowledge stop source traffic clicked for:', selectedWorkflow.workflowName);
-          handleSendControlCommand(selectedWorkflow.namespaceID, selectedWorkflow.workflowName, "STOP_SOURCE_TRAFFIC_ACK");
-        }
-      });
-    }
-    
+
     return items;
   };
-  
-  // Handle send control command
-  const handleSendControlCommand = async (namespaceID: string, workflowName: string, notificationID: string) => {
-    try {
-      setSendingControlCommand(`${namespaceID}:${workflowName}`);
-      setSendControlCommandError(null);
-      await workflowService.sendControlCommand(namespaceID, workflowName, notificationID);
-      
-      // Update the workflow status in the local state
-      setWorkflows(prevWorkflows => 
-        prevWorkflows.map(workflow => 
-          workflow.namespaceID === namespaceID && workflow.workflowName === workflowName
-            ? { ...workflow, status: 'RUNNING' }
-            : workflow
-        )
-      );
-      
-      // Show success notification
-      if (addNotification) {
-        addNotification({
-          type: 'success',
-          header: 'Success',
-          content: 'Successfully acknowledged stop source traffic!',
-          id: `send-control-command-success-${namespaceID}-${workflowName}`,
-          dismissible: true,
-          dismissLabel: 'Dismiss message'
-        });
-      }
-    } catch (err) {
-      console.error('Error sending control command:', err);
-      setSendControlCommandError(`Failed to acknowledge stop source traffic for ${workflowName}. Please try again later.`);
-      
-      // Show error notification
-      if (addNotification) {
-        addNotification({
-          type: 'error',
-          header: 'Error',
-          content: `Failed to acknowledge stop source traffic for ${workflowName}. Please try again.`,
-          id: `send-control-command-error-${namespaceID}-${workflowName}`,
-          dismissible: true,
-          dismissLabel: 'Dismiss message'
-        });
-      }
-    } finally {
-      setSendingControlCommand(null);
-    }
-  };
-  
+
   // Render loading state
   if (loading) {
     return (
@@ -336,18 +273,9 @@ const ListWorkflows: React.FC<ListWorkflowsProps> = ({ onViewWorkflow, addNotifi
             id: 'status',
             header: 'Status',
             cell: (item: WorkflowView) => {
-              const StatusComponent = (
-                <StatusIndicator type={getStatusIndicator(item.status)}>
-                  {item.status}
-                </StatusIndicator>
-              );
-
-              return item.status === 'WAITING' ? (
-                <Popover content={getStatusPopoverContent(item.status)}
-                  header={getStatusPopoverHeader(item.status)}>
-                  {StatusComponent}
-                </Popover>
-              ) : StatusComponent;
+              return  <StatusIndicator type={getStatusIndicator(item.status)}>
+                {item.status}
+              </StatusIndicator>;
             },
           },
           {

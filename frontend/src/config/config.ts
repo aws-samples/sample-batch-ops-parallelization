@@ -5,7 +5,7 @@
 // API Gateway configuration
 export const API_CONFIG = {
   // Base URL for API Gateway
-  baseURL: 'https://ux424o6an6.execute-api.us-east-1.amazonaws.com/dev',
+  baseURL: 'https://oent7wwkna.execute-api.us-west-2.amazonaws.com/dev/',
   
   // API version
   apiVersion: 'v1',
