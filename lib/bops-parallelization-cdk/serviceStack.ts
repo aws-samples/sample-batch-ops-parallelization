@@ -32,7 +32,7 @@ export class ServiceStack extends Stack {
     // Create CloudWatch log group for Lambda
     const lambdaLogGroup = new LogGroup(this, 'LambdaLogGroup', {
         retention: RetentionDays.ONE_WEEK,
-        logGroupName: '/aws/lambda/s3-externalized-service-lambda',
+        logGroupName: '/aws/lambda/bops-parallelization-service-lambda',
         removalPolicy: RemovalPolicy.DESTROY
     });
 
@@ -47,7 +47,7 @@ export class ServiceStack extends Stack {
       vpc: this.vpc,
         runtime: Runtime.JAVA_17,
         handler: 'com.amazon.tdm.s3a.service.LambdaMain::handleRequest',
-        code: Code.fromAsset('../build/libs/S3AExternalization-1.0-SNAPSHOT-all.jar'),
+        code: Code.fromAsset('../build/libs/BOPSParallelization-1.0-SNAPSHOT-all.jar'),
         timeout: Duration.seconds(30),
         memorySize: 1024,
         // Explicitly define the log group for this Lambda function
