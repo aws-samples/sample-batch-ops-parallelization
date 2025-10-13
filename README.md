@@ -33,11 +33,22 @@ ada credentials update --account=<AWS_ACCOUNT> --provider=Isengard --role=Admin 
 
 cd lib
 
-# You should see the stacks with your AWS Account ID in the list
+# You should see the list of stacks
 cdk list 
 
 # Deploying the Service Stack deploys all other stacks (except the code pipeline)
-npx cdk deploy PipelineStack/BOPSParallelization-dev/ServiceStack-<AWS_ACCOUNT>-us-west-2-dev
+cdk deploy --all
+```
+
+## Update frontend to use deployed API Gateway URL
+```
+Update frontend to use deployed API Gateway URL in file: frontend/src/config/config.ts
+
+cd lib
+
+npm run build
+
+cdk deploy FrontendStack
 ```
 
 ### Issues

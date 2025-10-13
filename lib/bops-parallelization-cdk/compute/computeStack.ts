@@ -26,7 +26,6 @@ export interface LambdaMap {
   s3ReplicationSetupLambda: LambdaResource;
   s3RollbackSetupLambda: LambdaResource;
   s3PostReplicationLambda: LambdaResource;
-  waitForCustomerAckLambda: LambdaResource;
 }
 
 export class ComputeStack extends Stack {
@@ -94,15 +93,6 @@ export class ComputeStack extends Stack {
       dbResources: this.dynamoDBResources,
     });
 
-    const waitForCustomerAckLambda = new LambdaResource(this, WAIT_FOR_CUSTOMER_ACK_LAMBDA.lambdaName, {
-      componentName: WAIT_FOR_CUSTOMER_ACK_LAMBDA.componentName,
-      functionName: WAIT_FOR_CUSTOMER_ACK_LAMBDA.lambdaName,
-      handler: WAIT_FOR_CUSTOMER_ACK_LAMBDA.handler,
-      roleName: `${WAIT_FOR_CUSTOMER_ACK_LAMBDA.lambdaName}Role`,
-      vpc: vpc,
-      dbResources: this.dynamoDBResources
-    });
-
     const policyStatement = new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ['sts:AssumeRole'],
@@ -120,7 +110,6 @@ export class ComputeStack extends Stack {
     s3ReplicationSetupLambda.lambdaRole.attachInlinePolicy(policy);
     s3RollbackSetupLambda.lambdaRole.attachInlinePolicy(policy);
     s3PostReplicationLambda.lambdaRole.attachInlinePolicy(policy);
-    waitForCustomerAckLambda.lambdaRole.attachInlinePolicy(policy);
 
     //2024-11-04: This policy is to allow MonitorLambda to create CW Alarms and Publish custom metrics
     //2024-11-27: Adding permissions to create CW dashboards w/SDK
@@ -153,7 +142,6 @@ export class ComputeStack extends Stack {
       s3ReplicationSetupLambda,
       s3RollbackSetupLambda,
       s3PostReplicationLambda,
-      waitForCustomerAckLambda,
     };
   }
 }

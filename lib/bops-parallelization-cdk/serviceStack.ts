@@ -46,8 +46,8 @@ export class ServiceStack extends Stack {
     const apiHandler = new Function(this, 'ApiHandler', {
       vpc: this.vpc,
         runtime: Runtime.JAVA_17,
-        handler: 'com.amazon.tdm.s3a.service.LambdaMain::handleRequest',
-        code: Code.fromAsset('../build/libs/BOPSParallelization-1.0-SNAPSHOT-all.jar'),
+        handler: 'com.amazon.bopspar.service.LambdaMain::handleRequest',
+        code: Code.fromAsset('../build/libs/S3AExternalization-1.0-SNAPSHOT-all.jar'),
         timeout: Duration.seconds(30),
         memorySize: 1024,
         // Explicitly define the log group for this Lambda function

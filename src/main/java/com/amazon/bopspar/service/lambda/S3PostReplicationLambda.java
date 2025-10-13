@@ -90,6 +90,7 @@ public class S3PostReplicationLambda implements RequestHandler<WorkflowRequest, 
             }
 
             workflowDetails.setCompletedAt(Instant.now().toString());
+            workflowDetails.setStatus(WorkflowStatus.FINISHED.name());
             workflowRepository.updateWorkflow(workflowDetails);
 
         } catch (RuntimeException runtimeException) {
