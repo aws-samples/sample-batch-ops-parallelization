@@ -48,7 +48,7 @@ constructor(scope: Construct, id: string, props?: StackProps) {
   private createS3aDashboard() {
 
     const s3aDashboard = new Dashboard(this, 'DataMigrationDashboard', {
-      dashboardName: 'TDMS3MigrationAccelerator-DataMigration',
+      dashboardName: 'BOPSParallel-DataMigration',
       start: '-' + Duration.hours(8).toIsoString(),
       periodOverride: PeriodOverride.INHERIT,
     });
@@ -69,7 +69,7 @@ constructor(scope: Construct, id: string, props?: StackProps) {
       new TextWidget({
         width: 24,
         height: 1,
-        markdown: '# S3A Data Migration Dashboard',
+        markdown: '# BOPSParallel Data Migration Dashboard',
       }),
       new TextWidget({
         width: 24,
