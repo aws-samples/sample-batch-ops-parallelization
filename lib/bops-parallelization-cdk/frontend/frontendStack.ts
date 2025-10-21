@@ -36,12 +36,6 @@ export class FrontendStack extends Stack {
             minimumProtocolVersion: SecurityPolicyProtocol.TLS_V1_2_2021
         });
 
-        // Deploy frontend files from /frontend/dist/ to the S3 bucket
-        new BucketDeployment(this, "DeployFrontend", {
-            sources: [Source.asset("../frontend/dist")],
-            destinationBucket: s3Bucket,
-            distribution,
-            distributionPaths: ["/*"],
-        });
+
     }
 }

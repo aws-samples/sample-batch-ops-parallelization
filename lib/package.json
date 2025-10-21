@@ -24,6 +24,7 @@
   "dependencies": {
     "@aws-cdk/aws-ec2": "^1.203.0",
     "aws-cdk-lib": "2.190.0",
+    "cdk": "^2.1030.0",
     "constructs": "^10.0.0"
   }
 }
