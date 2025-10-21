@@ -23,8 +23,7 @@ export interface ServiceStackProps extends StackProps {
 
 export class ServiceStack extends Stack {
 
-  readonly vpc: IVpc;
-  public readonly restApi: RestApi;
+  readonly vpc: IVpc;  
   
   constructor(scope: Construct, id: string, props: ServiceStackProps) {
     super(scope, id, props);
@@ -43,11 +42,12 @@ export class ServiceStack extends Stack {
     const dynamoDbTable = Table.fromTableArn(this, 'DynamoDbTable', dynamoDbTableArn);
 
     // Create a Lambda function that will handle API requests
-    const apiHandler = new Function(this, 'ApiHandler', {
-      vpc: this.vpc,
+    const apiHandler = new Function(this, 'BOPSParallelMainHandler', {
+        vpc: this.vpc,
+        functionName: 'BOPSParallelMainHandler',
         runtime: Runtime.JAVA_17,
         handler: 'com.amazon.bopspar.service.LambdaMain::handleRequest',
-        code: Code.fromAsset('../build/libs/S3AExternalization-1.0-SNAPSHOT-all.jar'),
+        code: Code.fromAsset('../build/libs/BOPSParallelization-1.0-SNAPSHOT-all.jar'),
         timeout: Duration.seconds(30),
         memorySize: 1024,
         // Explicitly define the log group for this Lambda function
@@ -58,69 +58,9 @@ export class ServiceStack extends Stack {
           WORKFLOW_STATE_MACHINE_ARN: props.workflowStateMachine.stateMachineArn,
           MANIFEST_SPLIT_STATE_MACHINE_ARN: props.manifestSplitStateMachine.stateMachineArn
         }
-    });
-
-    // Create an API Gateway REST API
-    this.restApi = new RestApi(this, 'S3ExternalizedApi', {
-      restApiName: 'S3 Externalized Service',
-      description: 'This API serves the S3 Externalization functionality',
-      deployOptions: {
-        stageName: 'dev',
-        metricsEnabled: true,
-        // Less verbose logging configuration
-        dataTraceEnabled: false,
-        loggingLevel: MethodLoggingLevel.INFO,
-        methodOptions: {
-          '/*/*': {
-            dataTraceEnabled: false,
-          }
-        }
-      },
-      defaultCorsPreflightOptions: {
-        allowOrigins: Cors.ALL_ORIGINS,
-        allowMethods: Cors.ALL_METHODS,
-      },
-    });
-
-    // Create Lambda integration
-    const lambdaIntegration = new LambdaIntegration(apiHandler, {
-      proxy: true,
-      requestTemplates: {
-        'application/json': '{ "statusCode": 200 }',
-      },
-    });
+    });    
 
     dynamoDbTable.grantReadWriteData(apiHandler);
-
-    // Create workflow resources based on the LambdaMain routes
-    
-    // Create workflow endpoint
-    const createWorkflowResource = this.restApi.root.addResource('createWorkflow');
-    createWorkflowResource.addMethod('POST', lambdaIntegration);
-    
-    // Get workflow endpoint
-    const getWorkflowResource = this.restApi.root.addResource('getWorkflow');
-    getWorkflowResource.addMethod('POST', lambdaIntegration);
-    
-    // Start workflow endpoint
-    const startWorkflowResource = this.restApi.root.addResource('startWorkflow');
-    startWorkflowResource.addMethod('POST', lambdaIntegration);
-
-        // Start workflow endpoint
-    const startManifestSplitWorkflowResource = this.restApi.root.addResource('startManifestSplitWorkflow');
-    startManifestSplitWorkflowResource.addMethod('POST', lambdaIntegration);
-    
-    // Delete workflow endpoint
-    const deleteWorkflowResource = this.restApi.root.addResource('deleteWorkflow');
-    deleteWorkflowResource.addMethod('POST', lambdaIntegration);
-
-    // SendControlCommand workflow endpoint
-    const sendControlCommandResource = this.restApi.root.addResource('sendControlCommand');
-    sendControlCommandResource.addMethod('POST', lambdaIntegration);
-
-    // ListWorkflows endpoint
-    const listWorkflowsResource = this.restApi.root.addResource('listWorkflows');
-    listWorkflowsResource.addMethod('POST', lambdaIntegration);
 
     //Create necessary permissions for assuming role (Needed for running S3 validations on customer accounts)
     const policyStatement = new PolicyStatement({
@@ -155,9 +95,9 @@ export class ServiceStack extends Stack {
     apiHandler.role?.attachInlinePolicy(stepFunctionPolicy);
 
     // Output the API URL
-    new CfnOutput(this, 'ApiUrl', {
-      value: this.restApi.url,
-      description: 'URL of the API Gateway',
+    new CfnOutput(this, 'BOPS-Parallel-Handler', {
+      value: apiHandler.functionArn,
+      description: 'BOPS Parallelization start workflow handler',
     });
   }
 }
