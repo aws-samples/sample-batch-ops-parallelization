@@ -28,6 +28,8 @@ import software.amazon.awssdk.services.s3control.model.S3ReplicateObjectOperatio
 import software.amazon.awssdk.services.s3control.model.UpdateJobStatusRequest;
 
 import java.net.URI;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -52,7 +54,8 @@ public class S3BatchOperationsManager {
      * @return CreateJobRequest
      */
     private CreateJobRequest createBatchReplicationJobRequest(final WorkFlowModel workflowModel,
-                                                              final String bopsRole) {
+                                                              final String bopsRole,
+                                                              final boolean isMoreThan1b) {
         String srcBucketARN = workflowModel.getSourceBucketARN();
         String destinationBucketARN = workflowModel.getDestBucketARN();
         String workflowName = workflowModel.getWorkflowName();
@@ -68,9 +71,20 @@ public class S3BatchOperationsManager {
             .s3ReplicateObject(S3ReplicateObjectOperation.builder().build())
             .build();
 
-        JobManifestGeneratorFilter jobManifestGeneratorFilter = JobManifestGeneratorFilter.builder()
-            .eligibleForReplication(true)
-            .build();
+        JobManifestGeneratorFilter.Builder jobManifestGeneratorFilterBuilder = JobManifestGeneratorFilter.builder()
+                .eligibleForReplication(true);
+
+        if (isMoreThan1b && workflowModel.getRuntimeConfig() != null
+                && workflowModel.getRuntimeConfig().getManifestLocation() != null
+                && workflowModel.getRuntimeConfig().getInventoryReportConfigStartedAt() != null) {
+            Instant migrationStartTime = Instant.parse(
+                    workflowModel.getRuntimeConfig().getInventoryReportConfigStartedAt()
+            );
+            jobManifestGeneratorFilterBuilder
+                    .createdAfter(migrationStartTime.minus(3, ChronoUnit.DAYS))
+                    .createdBefore(migrationStartTime.plus(1, ChronoUnit.DAYS));
+        }
+        JobManifestGeneratorFilter jobManifestGeneratorFilter = jobManifestGeneratorFilterBuilder.build();
 
         S3JobManifestGenerator s3JobManifestGenerator = S3JobManifestGenerator.builder()
             .enableManifestOutput(false)
@@ -183,7 +197,7 @@ public class S3BatchOperationsManager {
     public CreateJobResponse setupBOPSJob(final WorkFlowModel workflow, final S3ControlClient s3ControlClient,
                                           final WorkflowRepository workflowRepository, final String bopsRole) {
         try {
-            CreateJobRequest createJobRequest = createBatchReplicationJobRequest(workflow, bopsRole);
+            CreateJobRequest createJobRequest = createBatchReplicationJobRequest(workflow, bopsRole, false);
             CreateJobResponse response = s3ControlClient.createJob(createJobRequest);
             updateWorkflowBopsJobId(workflow, workflowRepository, response);
             return response;
@@ -201,8 +215,8 @@ public class S3BatchOperationsManager {
      *
      * @param workflow The workflow details containing the destination bucket ARN
      * @param s3Client The S3Client for the source bucket
-     * @param s3Controlclient  The S3 Control client for the source bucket
-     * @param worflowRepository Used for DynamoDB persistence
+     * @param s3ControlClient  The S3 Control client for the source bucket
+     * @param workflowRepository Used for DynamoDB persistence
      * @param bopsRole The IAM role needed by the BOPS jobs to be able to do their work
      */
     public CreateJobResponse setupBOPSJob(final WorkFlowModel workflow,
@@ -243,6 +257,21 @@ public class S3BatchOperationsManager {
                     manifestMetadata.getKey(),
                     s3ControlException);
             }
+        }
+
+        // Since Inventory Report Config has a 1-2 delay in data after initially attaching the config to the bucket,
+        // create a new BOPS job with a 4 day gap to ensure that the source and dest buckets are in sync.
+        log.info("Starting BOPS job with 4 day gap to cover inventory report config data delay");
+        try {
+            CreateJobRequest createJobRequest = createBatchReplicationJobRequest(workflow, bopsRole, true);
+            response = s3ControlClient.createJob(createJobRequest);
+            jobIds.add(response.jobId());
+        } catch (S3ControlException s3ControlException) {
+            errorMessages.add(String.format("Error configuring BOPS job for 4 day gap: %s ",
+                    s3ControlException.awsErrorDetails().errorMessage()));
+            log.error(
+                    "S3Exception in bops job setup for 4 day gap",
+                    s3ControlException);
         }
 
         workflow.setBopsJobID(String.join(",", jobIds)); // for backward compatibility

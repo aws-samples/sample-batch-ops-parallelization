@@ -32,6 +32,8 @@ import software.amazon.awssdk.policybuilder.iam.IamConditionKey;
 import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
 import software.amazon.awssdk.services.s3.S3Client;
 
+import java.time.Instant;
+
 /**
  * Lambda handler for setting up S3 inventory report configuration on customer source buckets.
  * This class implements the AWS Lambda RequestHandler interface to process WorkflowRequest events.
@@ -146,6 +148,7 @@ public class S3InventoryConfigSetupLambda implements RequestHandler<WorkflowRequ
             }
 
             workflowDetails.getRuntimeConfig().setInventoryReportBucketArn(inventoryReportBucketArn);
+            workflowDetails.getRuntimeConfig().setInventoryReportConfigStartedAt(Instant.now().toString());
             workflowDetails.setState(WorkflowState.CONFIGURING_INVENTORY.name());
             workflowRepository.updateWorkflow(workflowDetails);
 

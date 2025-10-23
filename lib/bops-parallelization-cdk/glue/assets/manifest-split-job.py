@@ -33,7 +33,7 @@ inventory_report_manifest_location = args['inventory_report_manifest_location']
 ROW_LIMIT = 1_000_000_000
 
 # WRITE_THRESHOLD is the number of rows to store in memory until starting write and unpersisting data
-WRITE_THRESHOLD = 100_000_000_000
+WRITE_THRESHOLD = 5_000_000_000
 
 # How many files to read in at a time
 FILE_CHUNK_SIZE = 50
@@ -157,7 +157,7 @@ def transform_data(df_batch):
     df_batch = df_batch.withColumn(df_batch.columns[2], url_encode(col(df_batch.columns[2])))
 
     # reduce current batch partitions to 1 and sortWithinPartitions with "key" column
-    df_batch = df_batch.coalesce(1).sortWithinPartitions("key", ascending=False)
+    df_batch = df_batch.coalesce(1)
 
     return df_batch
 
