@@ -118,7 +118,7 @@ public class S3BatchOperationsManagerTest {
             s3ControlClient, workflowRepository, BOPS_ROLE);
 
         // Assert
-        verify(s3ControlClient, times(1)).createJob(any(CreateJobRequest.class));
+        verify(s3ControlClient, times(2)).createJob(any(CreateJobRequest.class));
     }
 
     @Test
@@ -151,7 +151,7 @@ public class S3BatchOperationsManagerTest {
             s3ControlClient, workflowRepository, BOPS_ROLE);
 
         // Assert
-        verify(s3ControlClient, times(1)).createJob(any(CreateJobRequest.class));
+        verify(s3ControlClient, times(2)).createJob(any(CreateJobRequest.class));
     }
 
     @Test
