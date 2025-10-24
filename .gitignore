@@ -4,6 +4,7 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 bin/
+!lib/bin/
 
 ### IntelliJ IDEA ###
 .idea/
