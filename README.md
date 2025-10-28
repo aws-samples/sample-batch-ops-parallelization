@@ -36,8 +36,11 @@ cd lib
 # You should see the list of stacks
 cdk list 
 
-# Deploying the Service Stack deploys all other stacks (except the code pipeline)
-cdk deploy --all
+# Deploy the unified stack (contains all components except frontend)
+cdk deploy BOPSParallelizationStack
+
+# Optional: Deploy frontend separately if needed
+cdk deploy FrontendStack
 ```
 
 ## Update frontend to use deployed API Gateway URL

@@ -1,5 +1,5 @@
 {
-  "app": "npx ts-node --prefer-ts-exts bin/S3Externalized.ts",
+  "app": "npx ts-node --prefer-ts-exts bin/BopsParallelizationApp.ts",
   "watch": {
     "include": [
       "**"
