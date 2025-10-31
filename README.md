@@ -1,58 +1,29 @@
-# S3 Accelerator(S3A) - BOPS Parallelization Blog
+# BOPS Parallelization Blog
 
-## Getting started```
-
-1. Clone the repository:
-
-```
-git clone git@ssh.code.aws.dev:proserve/s3ablog-parallel-bops/BOPSParallelization.git
-```
-
+## Getting started
 
 ## Prerequisites
 
 - Java 17 or higher
 - Gradle 8.x
+- [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) 
+- [AWS CDK](https://docs.aws.amazon.com/cdk/v2/guide/getting-started.html)
 
-## Building the Project
 
-```bash
-./gradlew shadowJar
+### Step 1. Clone the repository:
+
+```
+git clone git@ssh.code.aws.dev:proserve/s3ablog-parallel-bops/BOPSParallelization.git
 ```
 
-## Running tests
+## Step 2. Deployment to your AWS account
 
-```bash
-./gradlew test
+Make sure you are authenticated to your account with a role with enough privileges to create IAM roles, then cd into the repository's <strong>lib</strong> directory and run the deploy.sh command
+
+(Assuming you have cloned the repository into the BOPSParallelization)
+```
+cd ./BOPSParallelization/lib
+sh ./deploy.sh
+
 ```
 
-## Deployment
-```
-# Authenticate to your account
-ada credentials update --account=<AWS_ACCOUNT> --provider=Isengard --role=Admin --once
-
-cd lib
-
-# You should see the list of stacks
-cdk list 
-
-# Deploy the unified stack (contains all components except frontend)
-cdk deploy BOPSParallelizationStack
-
-# Optional: Deploy frontend separately if needed
-cdk deploy FrontendStack
-```
-
-## Update frontend to use deployed API Gateway URL
-```
-Update frontend to use deployed API Gateway URL in file: frontend/src/config/config.ts
-
-cd lib
-
-npm run build
-
-cdk deploy FrontendStack
-```
-
-### Issues
-- If you run into node libaries not found errors, remove your ```node_modules``` directory and try ```npm install```

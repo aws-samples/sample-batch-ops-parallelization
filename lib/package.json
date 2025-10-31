@@ -5,9 +5,8 @@
     "lib": "bin/lib.js"
   },
   "scripts": {
-    "build": "tsc && npm run build:java && npm run build:frontend",
-    "build:java": "cd ../ && ./gradlew shadowJar",
-    "build:frontend": "cd ../frontend && npm install && npm run build",
+    "build": "tsc && npm run build:java",
+    "build:java": "cd ../ && ./gradlew shadowJar",    
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk"
