@@ -18,7 +18,7 @@ git clone git@ssh.code.aws.dev:proserve/s3ablog-parallel-bops/BOPSParallelizatio
 
 ## Step 2. Deployment to your AWS account
 
-Make sure you are authenticated to your account with a role with enough privileges to create IAM roles, then cd into the repository's <strong>lib</strong> directory and run the deploy.sh command
+Make sure you are authenticated to your account with enough privileges to create IAM roles, and you are on AWS region us-west-2 then cd into the repository's <strong>lib</strong> directory and run the deploy.sh command
 
 (Assuming you have cloned the repository into the BOPSParallelization)
 ```
