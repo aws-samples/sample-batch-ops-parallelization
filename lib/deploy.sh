@@ -5,6 +5,7 @@ set -e
 
 # Variables
 STACK_NAME="BOPSParallelizationStack"
+IAM_STACK_NAME="BOPSParallelizationIAMStack"
 AWS_PROFILE="${AWS_PROFILE:-default}"  # Use specified AWS_PROFILE or default
 
 # Colors for output
@@ -52,6 +53,10 @@ fi
 # Deploy the stack
 echo -e "${YELLOW}Deploying ${STACK_NAME}...${NC}"
 cdk deploy ${STACK_NAME} --require-approval never
+
+# Deploy the stack
+echo -e "${YELLOW}Deploying ${IAM_STACK_NAME}...${NC}"
+cdk deploy ${IAM_STACK_NAME} --require-approval never
 
 # Check if deployment was successful
 if [ $? -eq 0 ]; then

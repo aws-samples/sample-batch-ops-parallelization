@@ -6,9 +6,9 @@ import { Code, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { Duration } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-import { ConstructBaseProps } from '../../persistence/constants';
 import { Vpc } from 'aws-cdk-lib/aws-ec2';
 import { DynamoDBResources } from '../../persistence/resources/dynamodb';
+import {NagSuppressions} from "cdk-nag";
 
 export interface LambdaProps {
   functionName: string;
@@ -29,6 +29,10 @@ export class LambdaResource extends Construct {
   constructor(parent: Construct, id: string, props: LambdaProps) {
     super(parent, id);
     this.dbResources = props.dbResources;
+    const account = cdk.Stack.of(this).account;
+    const region = cdk.Stack.of(this).region;
+
+    const logGroupName = `/aws/lambda/${props.functionName}`;
 
     const encryptionKey = new kms.Key(this, `EncryptionKey`, {
       enableKeyRotation: true,
@@ -40,16 +44,38 @@ export class LambdaResource extends Construct {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
       roleName: props.roleName,
     });
-    this.lambdaRole.addManagedPolicy(
-      iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole'),
-    );
-    this.lambdaRole.addManagedPolicy(
-      iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaVPCAccessExecutionRole'),
-    );
+    const cwPolicy = new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'logs:CreateLogGroup',
+        'logs:CreateLogStream',
+        'logs:PutLogEvents'
+      ],
+      resources: [
+        `arn:aws:logs:${region}:${account}:log-group:${logGroupName}`,
+        `arn:aws:logs:${region}:${account}:log-group:${logGroupName}:*`
+      ]
+    })
 
+    this.lambdaRole.addToPolicy(cwPolicy);
+
+    const ec2Policy = new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'ec2:CreateNetworkInterface',
+        'ec2:DescribeNetworkInterfaces',
+        'ec2:DeleteNetworkInterface',
+        'ec2:AssignPrivateIpAddresses',
+        'ec2:UnassignPrivateIpAddresses',
+        'ec2:DescribeNetworkInterfaces'
+      ],
+      resources: ['*']
+    })
+
+    this.lambdaRole.addToPolicy(ec2Policy);
     this.lambdaFunction = new lambda.Function(this, `Function`, {
       handler: props.handler,
-      runtime: Runtime.JAVA_17,
+      runtime: Runtime.JAVA_21,
       functionName: props.functionName,
       code:  Code.fromAsset('../build/libs/BOPSParallelization-1.0-SNAPSHOT-all.jar'),
       role: this.lambdaRole,
@@ -64,6 +90,13 @@ export class LambdaResource extends Construct {
     });
 
     this.dbResources.executionTable.grantReadWriteData(this.lambdaFunction);
+
+    NagSuppressions.addResourceSuppressions(this.lambdaRole, [
+      {
+        id: 'AwsSolutions-IAM5',
+        reason: 'Lambda needs permissions to write to CloudWatch Logs, manage VPC'
+      }
+    ], true);
   }
 
   private getDefaultEncryptionKeyAlias(functionName: string): string {

@@ -29,5 +29,17 @@
     "eu-west-1a",
     "eu-west-1b",
     "eu-west-1c"
+  ],
+  "availability-zones:account=444455556666:region=us-west-2": [
+    "us-west-2a",
+    "us-west-2b",
+    "us-west-2c",
+    "us-west-2d"
+  ],
+  "availability-zones:account=555566667777:region=us-west-2": [
+    "us-west-2a",
+    "us-west-2b",
+    "us-west-2c",
+    "us-west-2d"
   ]
 }

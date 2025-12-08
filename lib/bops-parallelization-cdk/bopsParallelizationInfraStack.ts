@@ -1,9 +1,23 @@
 import { Construct } from 'constructs';
-import { Stack, StackProps } from 'aws-cdk-lib';
+import { aws_ec2 as ec2, Stack, StackProps } from 'aws-cdk-lib';
 import { DynamoDBResources } from './persistence/resources/dynamodb';
 import { LambdaResource } from './compute/resources/lambda';
 import { Vpc } from 'aws-cdk-lib/aws-ec2';
-import { StateMachine, DefinitionBody, StateMachineType, Chain, Choice, Condition, Pass, Wait, WaitTime, Fail, TaskInput, IntegrationPattern } from 'aws-cdk-lib/aws-stepfunctions';
+import {
+  StateMachine,
+  DefinitionBody,
+  StateMachineType,
+  Chain,
+  Choice,
+  Condition,
+  Pass,
+  Wait,
+  WaitTime,
+  Fail,
+  TaskInput,
+  IntegrationPattern,
+  LogLevel
+} from 'aws-cdk-lib/aws-stepfunctions';
 import { LambdaInvoke, StepFunctionsStartExecution } from 'aws-cdk-lib/aws-stepfunctions-tasks';
 import { Function, Runtime, Code } from 'aws-cdk-lib/aws-lambda';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
@@ -23,6 +37,7 @@ import {
   POLL_FOR_GLUE_JOB_LAMBDA,
   POLL_FOR_INVENTORY_REPORT_MANIFEST_LAMBDA,
 } from './compute/constants';
+import { NagSuppressions } from 'cdk-nag';
 
 export class BopsParallelizationInfraStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -34,7 +49,18 @@ export class BopsParallelizationInfraStack extends Stack {
     // 2. Create VPC
     const vpc = new Vpc(this, 'Vpc', {
       maxAzs: 2,
-      natGateways: 1
+      natGateways: 1,
+    });
+
+    const flowLogGroup = new LogGroup(this, 'VpcFlowLogGroup', {
+      retention: RetentionDays.ONE_WEEK,
+      removalPolicy: RemovalPolicy.DESTROY
+    });
+
+    const vpcFlowLog = new ec2.FlowLog(this, 'VpcFlowLog', {
+      resourceType: ec2.FlowLogResourceType.fromVpc(vpc),
+      destination: ec2.FlowLogDestination.toCloudWatchLogs(flowLogGroup),
+      trafficType: ec2.FlowLogTrafficType.ALL
     });
 
     // 3. Create Lambda functions
@@ -175,10 +201,10 @@ export class BopsParallelizationInfraStack extends Stack {
     });
 
     // Attach policies to Lambda roles
-    [createS3BucketLambda, configureS3BucketLambda, s3MonitorLambda, 
-     s3ReplicationSetupLambda, s3RollbackSetupLambda, s3PostReplicationLambda,
-     s3InventoryConfigSetupLambda, s3PollForInventoryReportManifestLambda, 
-     manifestSplitLambda, s3PollForGlueJobLambda]
+    [createS3BucketLambda, configureS3BucketLambda, s3MonitorLambda,
+      s3ReplicationSetupLambda, s3RollbackSetupLambda, s3PostReplicationLambda,
+      s3InventoryConfigSetupLambda, s3PollForInventoryReportManifestLambda,
+      manifestSplitLambda, s3PollForGlueJobLambda]
       .forEach(lambda => lambda.lambdaRole.attachInlinePolicy(assumeRolePolicy));
 
     s3MonitorLambda.lambdaRole.attachInlinePolicy(monitorPolicy);
@@ -266,11 +292,21 @@ export class BopsParallelizationInfraStack extends Stack {
     waitForBackfillComplete.next(s3MonitorBackfillTask);
     s3PostReplicationTask.next(closeWorkflow);
 
+    const s3aWorkflowlogGroup = new LogGroup(this, 'S3AWorkflowLogGroup', {
+      retention: RetentionDays.ONE_WEEK,
+      removalPolicy: RemovalPolicy.DESTROY
+    });
+
     const stateMachine = new StateMachine(this, 'S3AWorkflow', {
       stateMachineName: "S3AWorkflow",
       definitionBody: DefinitionBody.fromChainable(workflowChain),
       stateMachineType: StateMachineType.STANDARD,
       tracingEnabled: true,
+      logs: {
+        destination: s3aWorkflowlogGroup,
+        level: LogLevel.ALL,
+        includeExecutionData: true
+      }
     });
 
     // 7. Create Manifest Split Workflow
@@ -418,11 +454,21 @@ export class BopsParallelizationInfraStack extends Stack {
     waitForS3PollGlueJob
       .next(s3PollGlueJobTask);
 
+    const manifestSplitWorkflowlogGroup = new LogGroup(this, 'ManifestSplitWorkflowLogGroup', {
+      retention: RetentionDays.ONE_WEEK,
+      removalPolicy: RemovalPolicy.DESTROY
+    });
+
     const manifestSplitStateMachine = new StateMachine(this, 'ManifestSplitWorkflow', {
       stateMachineName: "ManifestSplitWorkflow",
       definitionBody: DefinitionBody.fromChainable(manifestWorkflowChain),
       stateMachineType: StateMachineType.STANDARD,
       tracingEnabled: true,
+      logs: {
+        destination: manifestSplitWorkflowlogGroup,
+        level: LogLevel.ALL,
+        includeExecutionData: true
+      }
     });
 
     // 6. Create API Lambda
@@ -437,7 +483,7 @@ export class BopsParallelizationInfraStack extends Stack {
     const apiHandler = new Function(this, 'BOPSParallelMainHandler', {
       vpc: vpc,
       functionName: 'BOPSParallelMainHandler',
-      runtime: Runtime.JAVA_17,
+      runtime: Runtime.JAVA_21,
       handler: 'com.amazon.bopspar.service.LambdaMain::handleRequest',
       code: Code.fromAsset('../build/libs/BOPSParallelization-1.0-SNAPSHOT-all.jar'),
       timeout: Duration.seconds(30),
@@ -469,5 +515,52 @@ export class BopsParallelizationInfraStack extends Stack {
       value: apiHandler.functionArn,
       description: 'BOPS Parallelization start workflow handler',
     });
+
+    // NAG Suppressions
+    // Suppress wildcard permissions for AssumeRole policy - needed for cross-account access
+    NagSuppressions.addResourceSuppressions(assumeRolePolicy, [
+      {
+        id: 'AwsSolutions-IAM5',
+        reason: 'AssumeRole policy requires wildcard permissions to assume roles across different accounts and regions for S3 replication setup',
+        appliesTo: ['Resource::*']
+      }
+    ]);
+
+    // Suppress wildcard permissions for CloudWatch monitoring policy - needed for metric operations
+    NagSuppressions.addResourceSuppressions(monitorPolicy, [
+      {
+        id: 'AwsSolutions-IAM5',
+        reason: 'CloudWatch monitoring requires wildcard permissions to create and manage alarms and dashboards across different resources',
+        appliesTo: ['Resource::*']
+      }
+    ]);
+
+    // Suppress Step Functions wildcard permissions by path - needed for Lambda invocation
+    NagSuppressions.addResourceSuppressionsByPath(this, '/BOPSParallelizationStack/S3AWorkflow/Role/DefaultPolicy/Resource', [
+      {
+        id: 'AwsSolutions-IAM5',
+        reason: 'Step Functions requires wildcard permissions on Lambda function ARNs to invoke different versions and aliases'
+      }
+    ]);
+
+    // Suppress Step Functions wildcard permissions for Manifest Split workflow by path
+    NagSuppressions.addResourceSuppressionsByPath(this, '/BOPSParallelizationStack/ManifestSplitWorkflow/Role/DefaultPolicy/Resource', [
+      {
+        id: 'AwsSolutions-IAM5',
+        reason: 'Step Functions requires wildcard permissions on Lambda function ARNs to invoke different versions and aliases'
+      }
+    ]);
+
+    // Suppress AWS managed policies for main API handler - these are standard Lambda execution policies
+    NagSuppressions.addResourceSuppressionsByPath(this, '/BOPSParallelizationStack/BOPSParallelMainHandler/ServiceRole/Resource', [
+      {
+        id: 'AwsSolutions-IAM4',
+        reason: 'AWS managed policies AWSLambdaBasicExecutionRole and AWSLambdaVPCAccessExecutionRole are standard policies for Lambda functions in VPC',
+        appliesTo: [
+          'Policy::arn:<AWS::Partition>:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole',
+          'Policy::arn:<AWS::Partition>:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole'
+        ]
+      }
+    ]);
   }
 }
