@@ -1,21 +1,27 @@
 import {Construct} from 'constructs';
 
-import {Duration, Stack, StackProps} from 'aws-cdk-lib';
+import {Duration, RemovalPolicy, Stack, StackProps} from 'aws-cdk-lib';
 import {
-    Chain, Choice, Condition,
+    Chain,
+    Choice,
+    Condition,
     DefinitionBody,
     Fail,
     IntegrationPattern,
+    LogLevel,
     Pass,
     StateMachine,
     StateMachineType,
     TaskInput,
     Wait,
-    WaitTime
+    WaitTime,
+    CfnStateMachine
 } from "aws-cdk-lib/aws-stepfunctions";
 import {LambdaInvoke, StepFunctionsStartExecution} from "aws-cdk-lib/aws-stepfunctions-tasks";
-import { LambdaManifestSplitMap } from '../compute/inventoryReportConfigStack';
-import { LambdaMap } from '../compute/computeStack';
+import {LambdaManifestSplitMap} from '../compute/inventoryReportConfigStack';
+import {LambdaMap} from '../compute/computeStack';
+import {LogGroup, RetentionDays} from "aws-cdk-lib/aws-logs";
+import { NagSuppressions } from 'cdk-nag';
 
 export interface ManifestSplitWorkflowStackProps extends StackProps {
     lambdas: LambdaManifestSplitMap & {
@@ -182,12 +188,29 @@ export class ManifestSplitWorkflowStack extends Stack {
         waitForS3PollGlueJob
             .next(s3PollGlueJobTask);
 
+        const logGroup = new LogGroup(this, 'ManifestSplitWorkflowLogGroup', {
+            retention: RetentionDays.ONE_WEEK,
+            removalPolicy: RemovalPolicy.DESTROY
+        });
+
         // Create the state machine
         this.stateMachine = new StateMachine(this, `ManifestSplitWorkflow`, {
             stateMachineName: "ManifestSplitWorkflow",
             definitionBody: DefinitionBody.fromChainable(workflowChain),
             stateMachineType: StateMachineType.STANDARD,
             tracingEnabled: true,
+            logs: {
+                destination: logGroup,
+                level: LogLevel.ALL,
+                includeExecutionData: true
+            }
         });
+
+         NagSuppressions.addResourceSuppressions(this.stateMachine.role, [
+            {
+                id: 'AwsSolutions-IAM5',
+                reason: 'Step function policy needs * for X-ray tracing and function alias/version'
+            }
+        ], true)
     }
 }

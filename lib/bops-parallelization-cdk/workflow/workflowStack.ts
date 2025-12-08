@@ -1,17 +1,23 @@
 import {Construct} from 'constructs';
 
-import {Duration, Stack, StackProps} from 'aws-cdk-lib';
+import {Duration, RemovalPolicy, Stack, StackProps} from 'aws-cdk-lib';
 import {LambdaMap} from "../compute/computeStack";
 import {
-    Chain, Choice, Condition,
-    DefinitionBody, IntegrationPattern, JsonPath,
+    Chain,
+    Choice,
+    Condition,
+    DefinitionBody,
+    LogLevel,
     Pass,
     StateMachine,
-    StateMachineType, TaskInput,
+    StateMachineType,
     Wait,
-    WaitTime
+    WaitTime,
+    CfnStateMachine
 } from "aws-cdk-lib/aws-stepfunctions";
 import {LambdaInvoke} from "aws-cdk-lib/aws-stepfunctions-tasks";
+import {LogGroup, RetentionDays} from "aws-cdk-lib/aws-logs";
+import {NagSuppressions} from "cdk-nag";
 
 export interface WorkflowStackProps extends StackProps {
     lambdas: LambdaMap
@@ -116,12 +122,29 @@ export class WorkflowStack extends Stack {
         s3PostReplicationTask
             .next(closeWorkflow);
 
+        const logGroup = new LogGroup(this, 'S3AWorkflowLogGroup', {
+            retention: RetentionDays.ONE_WEEK,
+            removalPolicy: RemovalPolicy.DESTROY
+        });
+
         this.stateMachine = new StateMachine(this, `S3AWorkflow`, {
             stateMachineName: "S3AWorkflow",
             definitionBody: DefinitionBody.fromChainable(workflowChain),
             stateMachineType: StateMachineType.STANDARD,
             tracingEnabled: true,
+            logs: {
+                destination: logGroup,
+                level: LogLevel.ALL,
+                includeExecutionData: true
+            }
         });
+
+        NagSuppressions.addResourceSuppressions(this.stateMachine.role, [
+            {
+                id: 'AwsSolutions-IAM5',
+                reason: 'Step function policy needs * for X-ray tracing and function alias/version'
+            }
+        ], true)
 
     }
 }

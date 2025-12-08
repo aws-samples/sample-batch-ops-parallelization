@@ -2,6 +2,7 @@ import { Stack, StackProps } from 'aws-cdk-lib';
 import { AccountPrincipal, ArnPrincipal, CompositePrincipal, Effect, ManagedPolicy, Policy, PolicyStatement, Role, ServicePrincipal }
     from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
+import { NagSuppressions } from "cdk-nag";
 
 export interface IamStackProps extends StackProps {
     manifestlambdaRoleArn: string;
@@ -143,7 +144,7 @@ export class S3AResourcesIAMStack extends Stack {
                 'kms:GetKeyPolicy',
                 'kms:PutKeyPolicy'
             ],
-            resources: ['*'],
+            resources: [`arn:aws:kms:*:*:key/*`],
         });
 
         const bucketKmsPolicy = new Policy(this, 'BucketKmsPolicy', {
@@ -328,9 +329,110 @@ export class S3AResourcesIAMStack extends Stack {
         inventoryReportRole.attachInlinePolicy(glueJobPolicy);
 
         this.glueJobRole = glueJobRole;
+
+        // NAG Suppressions for IAM Stack
+        // Suppress KMS wildcard permissions - needed for cross-account encryption
+        NagSuppressions.addResourceSuppressions(replicationKmsPolicy, [
+            {
+                id: 'AwsSolutions-IAM5',
+                reason: 'KMS permissions require wildcard access for cross-account replication with different encryption keys',
+                appliesTo: ['Resource::*']
+            }
+        ]);
+
+        // Suppress S3 BOPS policy wildcards - needed for replication operations
+        NagSuppressions.addResourceSuppressions(s3BopsPolicy, [
+            {
+                id: 'AwsSolutions-IAM5',
+                reason: 'S3 replication requires wildcard permissions for manifest buckets, migration reports, and object operations across different buckets',
+                appliesTo: [
+                    'Resource::arn:aws:s3:::manifest*',
+                    'Resource::arn:aws:s3:::s3a-migration-reports-bucket*',
+                    'Action::s3:GetObjectVersion*',
+                    'Action::s3:PutObject*',
+                    'Action::s3:Replicate*',
+                    'Resource::*'
+                ]
+            }
+        ]);
+
+        // Suppress CloudWatch wildcard permissions - needed for monitoring
+        NagSuppressions.addResourceSuppressions(cloudwatchPolicy, [
+            {
+                id: 'AwsSolutions-IAM5',
+                reason: 'CloudWatch monitoring requires wildcard permissions to access metrics across different resources',
+                appliesTo: ['Resource::*']
+            }
+        ]);
+
+        // Suppress bucket KMS policy wildcards - needed for key management
+        NagSuppressions.addResourceSuppressions(bucketKmsPolicy, [
+            {
+                id: 'AwsSolutions-IAM5',
+                reason: 'KMS key policy management requires wildcard access to keys across regions and accounts',
+                appliesTo: ['Resource::arn:aws:kms:*:*:key/*']
+            }
+        ]);
+
+        // Suppress S3 bucket policy wildcards - needed for bucket operations
+        NagSuppressions.addResourceSuppressions(s3LambdaPolicy, [
+            {
+                id: 'AwsSolutions-IAM5',
+                reason: 'S3 bucket operations require wildcard permissions for manifest, logging, and migration report buckets',
+                appliesTo: [
+                    'Resource::arn:aws:s3:::manifest*',
+                    'Resource::arn:aws:s3:::s3a-migration-reports-bucket*',
+                    'Resource::arn:aws:s3:::server-access-logging*',
+                    'Resource::arn:aws:s3:::*',
+                    'Resource::*'
+                ]
+            }
+        ]);
+
+        // Suppress Glue job policy wildcards - needed for inventory operations
+        NagSuppressions.addResourceSuppressions(glueJobPolicy, [
+            {
+                id: 'AwsSolutions-IAM5',
+                reason: 'Glue job requires wildcard S3 permissions for inventory configuration and migration reports',
+                appliesTo: [
+                    'Resource::arn:aws:s3:::*',
+                    'Resource::arn:aws:s3:::s3a-migration-reports-bucket-*'
+                ]
+            }
+        ]);
+
+        // Suppress AWS managed policy for Glue service role
+        NagSuppressions.addResourceSuppressions(glueJobRole, [
+            {
+                id: 'AwsSolutions-IAM4',
+                reason: 'AWSGlueServiceRole is the standard AWS managed policy required for Glue job execution',
+                appliesTo: ['Policy::arn:<AWS::Partition>:iam::aws:policy/service-role/AWSGlueServiceRole']
+            }
+        ]);
+
+        // Suppress cross-account S3 policy wildcards - needed for cross-account operations
+        NagSuppressions.addResourceSuppressions(crossAccountS3Policy, [
+            {
+                id: 'AwsSolutions-IAM5',
+                reason: 'Cross-account S3 operations require wildcard permissions to access buckets in different accounts',
+                appliesTo: ['Resource::*']
+            }
+        ]);
+
+        // Suppress inventory config policy wildcards - needed for inventory operations
+        NagSuppressions.addResourceSuppressions(inventoryConfigPolicy, [
+            {
+                id: 'AwsSolutions-IAM5',
+                reason: 'Inventory configuration requires wildcard S3 permissions and migration report bucket access',
+                appliesTo: [
+                    'Resource::arn:aws:s3:::*',
+                    'Resource::arn:aws:s3:::s3a-migration-reports-bucket-*'
+                ]
+            }
+        ]);
     }
 
-    // private generateS3Resources(
+    // private generat
     //     sourceBuckets: string[] | undefined,
     //     destBuckets: string[] | undefined,
     //     manifestBuckets: string[] | undefined
