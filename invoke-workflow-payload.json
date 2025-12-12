@@ -1,0 +1,18 @@
+{
+  "workflow": {
+    "workflowName": "bops-demo-01",
+    "namespaceID": "ns202510",
+    "destAccountNumber": "<AWS_ACCOUNT>",
+    "destBucketARN": "arn:aws:s3:::<DESTINATION_BUCKET>",
+    "destRegion": "<REGION>",
+    "destRoleARN": "arn:aws:iam::<AWS_ACCOUNT>:role/s3a-bucket-permissions",
+    "sourceAccountNumber": "<AWS_ACCOUNT>",
+    "sourceBucketARN": "arn:aws:s3:::src-test-bopspar-<AWS_ACCOUNT>-us-west-2",
+    "sourceRegion": "<REGION>",
+    "sourceRoleARN": "arn:aws:iam::<AWS_ACCOUNT>:role/s3a-bucket-permissions",
+    "state": "READY",
+    "status": "READY",
+    "workflowConfig": {},
+    "workflowType": "S3_MIGRATOR"
+  }
+}
