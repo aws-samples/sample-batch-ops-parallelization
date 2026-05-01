@@ -123,16 +123,12 @@ dependencies {
     implementation("software.amazon.awssdk:glue")
 }
 
-// Force resolution of vulnerable transitive dependencies
 configurations.all {
     resolutionStrategy {
-        // jackson-core: fixes CVE-2025-49128, CVE-2025-52999, async parser DoS
         force("com.fasterxml.jackson.core:jackson-core:2.18.3")
         force("com.fasterxml.jackson.core:jackson-databind:2.18.3")
         force("com.fasterxml.jackson.core:jackson-annotations:2.18.3")
 
-        // netty: fixes CVE-2025-58056, CVE-2025-58057, CVE-2025-55163, CVE-2025-67735,
-        //        CVE-2026-33871, CVE-2026-33870
         force("io.netty:netty-codec:4.1.132.Final")
         force("io.netty:netty-codec-http:4.1.132.Final")
         force("io.netty:netty-codec-http2:4.1.132.Final")
@@ -143,13 +139,10 @@ configurations.all {
         force("io.netty:netty-resolver:4.1.132.Final")
         force("io.netty:netty-transport-native-unix-common:4.1.132.Final")
 
-        // ion-java: fixes CVE-2024-21634
         force("software.amazon.ion:ion-java:1.11.9")
 
-        // guava: fixes CVE-2023-2976
         force("com.google.guava:guava:33.4.0-jre")
 
-        // jetty: fixes CVE-2025-11143, CVE-2026-1605, CVE-2026-2332
         force("org.eclipse.jetty:jetty-http:12.0.32")
         force("org.eclipse.jetty:jetty-server:12.0.32")
         force("org.eclipse.jetty:jetty-io:12.0.32")
