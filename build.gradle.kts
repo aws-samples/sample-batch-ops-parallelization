@@ -69,20 +69,20 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok:1.18.30")
 
     // log4j2
-    implementation("org.apache.logging.log4j:log4j-api:2.20.0")
-    implementation("org.apache.logging.log4j:log4j-core:2.20.0")
+    implementation("org.apache.logging.log4j:log4j-api:2.25.4")
+    implementation("org.apache.logging.log4j:log4j-core:2.25.4")
 
     // SLF4J
-    implementation("org.apache.logging.log4j:log4j-slf4j2-impl:2.20.0")
+    implementation("org.apache.logging.log4j:log4j-slf4j2-impl:2.25.4")
 
     // dynamodb
-    implementation("com.amazonaws:aws-java-sdk-dynamodb:1.12.621")
+    implementation("com.amazonaws:aws-java-sdk-dynamodb:1.12.778")
 
     // dagger
     implementation("com.google.dagger:dagger:2.50")
     annotationProcessor("com.google.dagger:dagger-compiler:2.50")
 
-    implementation(platform("software.amazon.awssdk:bom:2.31.32"))
+    implementation(platform("software.amazon.awssdk:bom:2.31.72"))
     implementation("software.amazon.awssdk:aws-core")
     // arn
     implementation("software.amazon.awssdk:arns")
@@ -92,7 +92,7 @@ dependencies {
     implementation("software.amazon.awssdk:s3control")
 
     // apache commons
-    implementation("org.apache.commons:commons-text:1.10.0")
+    implementation("org.apache.commons:commons-text:1.13.0")
 
     //sts
     implementation("software.amazon.awssdk:sts")
@@ -121,6 +121,40 @@ dependencies {
     
     // Glue
     implementation("software.amazon.awssdk:glue")
+}
+
+// Force resolution of vulnerable transitive dependencies
+configurations.all {
+    resolutionStrategy {
+        // jackson-core: fixes CVE-2025-49128, CVE-2025-52999, async parser DoS
+        force("com.fasterxml.jackson.core:jackson-core:2.18.3")
+        force("com.fasterxml.jackson.core:jackson-databind:2.18.3")
+        force("com.fasterxml.jackson.core:jackson-annotations:2.18.3")
+
+        // netty: fixes CVE-2025-58056, CVE-2025-58057, CVE-2025-55163, CVE-2025-67735,
+        //        CVE-2026-33871, CVE-2026-33870
+        force("io.netty:netty-codec:4.1.132.Final")
+        force("io.netty:netty-codec-http:4.1.132.Final")
+        force("io.netty:netty-codec-http2:4.1.132.Final")
+        force("io.netty:netty-handler:4.1.132.Final")
+        force("io.netty:netty-buffer:4.1.132.Final")
+        force("io.netty:netty-common:4.1.132.Final")
+        force("io.netty:netty-transport:4.1.132.Final")
+        force("io.netty:netty-resolver:4.1.132.Final")
+        force("io.netty:netty-transport-native-unix-common:4.1.132.Final")
+
+        // ion-java: fixes CVE-2024-21634
+        force("software.amazon.ion:ion-java:1.11.9")
+
+        // guava: fixes CVE-2023-2976
+        force("com.google.guava:guava:33.4.0-jre")
+
+        // jetty: fixes CVE-2025-11143, CVE-2026-1605, CVE-2026-2332
+        force("org.eclipse.jetty:jetty-http:12.0.32")
+        force("org.eclipse.jetty:jetty-server:12.0.32")
+        force("org.eclipse.jetty:jetty-io:12.0.32")
+        force("org.eclipse.jetty:jetty-util:12.0.32")
+    }
 }
 
 tasks {
