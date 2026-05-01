@@ -92,7 +92,7 @@ dependencies {
     implementation("software.amazon.awssdk:s3control")
 
     // apache commons
-    implementation("org.apache.commons:commons-text:1.13.0")
+    implementation("org.apache.commons:commons-text:1.15.0")
 
     //sts
     implementation("software.amazon.awssdk:sts")
