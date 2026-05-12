@@ -21,10 +21,14 @@
     "typescript": "~5.6.3"
   },
   "dependencies": {
-    "@aws-cdk/aws-ec2": "^1.203.0",
-    "aws-cdk-lib": "2.190.0",
+    "aws-cdk-lib": "2.251.0",
     "cdk": "^2.1030.0",
     "cdk-nag": "^2.37.55",
     "constructs": "^10.0.0"
+  },
+  "overrides": {
+    "handlebars": "4.7.9",
+    "diff": "4.0.4",
+    "picomatch": "4.0.4"
   }
 }
