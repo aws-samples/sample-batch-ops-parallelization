@@ -129,24 +129,24 @@ configurations.all {
         force("com.fasterxml.jackson.core:jackson-databind:2.18.3")
         force("com.fasterxml.jackson.core:jackson-annotations:2.18.3")
 
-        force("io.netty:netty-codec:4.1.132.Final")
-        force("io.netty:netty-codec-http:4.1.132.Final")
-        force("io.netty:netty-codec-http2:4.1.132.Final")
-        force("io.netty:netty-handler:4.1.132.Final")
-        force("io.netty:netty-buffer:4.1.132.Final")
-        force("io.netty:netty-common:4.1.132.Final")
-        force("io.netty:netty-transport:4.1.132.Final")
-        force("io.netty:netty-resolver:4.1.132.Final")
-        force("io.netty:netty-transport-native-unix-common:4.1.132.Final")
+        force("io.netty:netty-codec:4.1.133.Final")
+        force("io.netty:netty-codec-http:4.1.133.Final")
+        force("io.netty:netty-codec-http2:4.1.133.Final")
+        force("io.netty:netty-handler:4.1.133.Final")
+        force("io.netty:netty-buffer:4.1.133.Final")
+        force("io.netty:netty-common:4.1.133.Final")
+        force("io.netty:netty-transport:4.1.133.Final")
+        force("io.netty:netty-resolver:4.1.133.Final")
+        force("io.netty:netty-transport-native-unix-common:4.1.133.Final")
 
         force("software.amazon.ion:ion-java:1.11.9")
 
         force("com.google.guava:guava:33.4.0-jre")
 
-        force("org.eclipse.jetty:jetty-http:12.0.32")
-        force("org.eclipse.jetty:jetty-server:12.0.32")
-        force("org.eclipse.jetty:jetty-io:12.0.32")
-        force("org.eclipse.jetty:jetty-util:12.0.32")
+        force("org.eclipse.jetty:jetty-http:12.0.33")
+        force("org.eclipse.jetty:jetty-server:12.0.33")
+        force("org.eclipse.jetty:jetty-io:12.0.33")
+        force("org.eclipse.jetty:jetty-util:12.0.33")
     }
 }
 
