@@ -97,6 +97,13 @@ export class LambdaResource extends Construct {
         reason: 'Lambda needs permissions to write to CloudWatch Logs, manage VPC'
       }
     ], true);
+
+    NagSuppressions.addResourceSuppressions(this.lambdaFunction, [
+      {
+        id: 'AwsSolutions-L1',
+        reason: 'Function uses Runtime.JAVA_21, the latest Java LTS runtime supported by AWS Lambda.'
+      }
+    ]);
   }
 
   private getDefaultEncryptionKeyAlias(functionName: string): string {

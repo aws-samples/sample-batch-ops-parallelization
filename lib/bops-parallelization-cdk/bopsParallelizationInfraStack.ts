@@ -526,6 +526,14 @@ export class BopsParallelizationInfraStack extends Stack {
       }
     ]);
 
+    // Suppress latest-runtime check for the Java API handler - JAVA_21 is the latest supported Java LTS runtime
+    NagSuppressions.addResourceSuppressions(apiHandler, [
+      {
+        id: 'AwsSolutions-L1',
+        reason: 'Function uses Runtime.JAVA_21, the latest Java LTS runtime supported by AWS Lambda.'
+      }
+    ]);
+
     // Suppress wildcard permissions for CloudWatch monitoring policy - needed for metric operations
     NagSuppressions.addResourceSuppressions(monitorPolicy, [
       {
