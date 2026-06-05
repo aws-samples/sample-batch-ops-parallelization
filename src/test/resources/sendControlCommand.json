@@ -1,0 +1,34 @@
+{
+  "resource": "/sendControlCommand",
+  "path": "/sendControlCommand",
+  "httpMethod": "POST",
+  "multiValueHeaders": {
+    "Content-Type": [
+      "application/x-amz-json-1.1"
+    ]
+  },
+  "multiValueQueryStringParameters": null,
+  "pathParameters": null,
+  "stageVariables": null,
+  "requestContext": {
+    "accountId": "12345678912",
+    "apiId": "MAGICID",
+    "httpMethod": "POST",
+    "identity": {
+      "accessKey": "MAGICKEY",
+      "accountId": "12345678912",
+      "caller": "SOME_CALLER",
+      "user": "SOME_USER",
+      "userAgent": "SOME_AGENT",
+      "userArn": "arn:aws:sts::12345678912:assumed-role/BONESBootstrapHydra-MyTestLambda/CODETEST_MyTestLambda_0678761137",
+      "sourceIp": "0.0.0.0"
+    },
+    "path": "/sendControlCommand",
+    "requestId": "REQUEST_ID",
+    "resourceId": "RESOURCE_ID",
+    "resourcePath": "/sendControlCommand",
+    "stage": "default"
+  },
+  "body": "{\"namespaceID\":\"namespace2\",\"workflowName\":\"workflowName\", \"notificationID\":\"STOP_SOURCE_TRAFFIC_ACK\"}",
+  "isBase64Encoded": false
+}
