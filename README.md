@@ -13,7 +13,7 @@
 ### Step 1. Clone the repository:
 
 ```
-git clone git@ssh.code.aws.dev:proserve/s3ablog-parallel-bops/BOPSParallelization.git
+git clone git@github.com:aws-samples/sample-batch-ops-parallelization.git
 ```
 
 ## Step 2. Deployment to your AWS account
@@ -57,3 +57,11 @@ Then go to the step function called "S3AWorkflow" and click start execution and 
   "namespaceID": "testNameSpaceID",
 }
 ```
+
+## Security
+
+See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
+
+## License
+
+This library is licensed under the MIT-0 License. See the LICENSE file.
