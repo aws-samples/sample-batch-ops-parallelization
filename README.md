@@ -58,6 +58,30 @@ Then go to the step function called "S3AWorkflow" and click start execution and 
 }
 ```
 
+## Step 4. Cleanup
+
+
+
+To avoid ongoing charges, run the provided cleanup script from the repository root:
+
+```bash
+sh ./cleanup.sh
+```
+
+The script will, in order:
+
+1. **Empty and delete runtime-created S3 buckets** — buckets matching the prefixes `src-test-bopspar-<account>`, `manifest*`, `s3a-migration-reports-bucket*`, and `server-access-logging*` are purged (all versions and delete markers are removed before deletion).
+2. **Delete the DynamoDB table** — `S3A_WORKFLOWS` is created with `RemovalPolicy.RETAIN`, so it survives a `cdk destroy` and must be deleted explicitly.
+3. **Destroy the CDK stacks** — `BOPSParallelizationIAMStack` then `BOPSParallelizationStack` are torn down via `cdk destroy --force`.
+
+To preview what would be deleted without making any changes:
+
+```bash
+sh ./cleanup.sh --dry-run
+```
+
+> **Note:** The script requires `aws`, `python3` (with `boto3`), and `cdk` on your PATH, and valid AWS credentials scoped to the deployment account and region (`us-west-2` by default).
+
 ## Security
 
 See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
