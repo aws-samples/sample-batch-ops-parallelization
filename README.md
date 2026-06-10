@@ -60,7 +60,7 @@ Then go to the step function called "S3AWorkflow" and click start execution and 
 
 ## Step 4. Cleanup
 
-> hi @oscarts @rajvih I reviewed, deployed, and tested the walkthrough — the solution works as described in the blog post. TFC review done for the walkthrough. One suggestion for the cleanup step: consider adding a `cleanup.sh` script to remove all deployed resources and avoid unnecessary costs, as deleting the CloudFormation stack alone is insufficient — runtime-created S3 buckets (including versioned objects) and the DynamoDB table must be purged first.
+
 
 To avoid ongoing charges, run the provided cleanup script from the repository root:
 
