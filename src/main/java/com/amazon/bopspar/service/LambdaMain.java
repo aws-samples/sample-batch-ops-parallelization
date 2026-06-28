@@ -31,7 +31,6 @@ public class LambdaMain implements RequestHandler<CreateWorkflowRequest, Workflo
     private static final String ROUTE_CREATE_WORKFLOW = "/createWorkflow";
     private static final String ROUTE_GET_WORKFLOW = "/getWorkflow";
     private static final String ROUTE_START_WORKFLOW = "/startWorkflow";
-    private static final String ROUTE_START_MANIFEST_SPLIT_WORKFLOW = "/startManifestSplitWorkflow";
     private static final String ROUTE_DELETE_WORKFLOW = "/deleteWorkflow";
     private static final String ROUTE_SEND_CONTROL_COMMAND = "/sendControlCommand";
     private static final String ROUTE_LIST_WORKFLOWS = "/listWorkflows";

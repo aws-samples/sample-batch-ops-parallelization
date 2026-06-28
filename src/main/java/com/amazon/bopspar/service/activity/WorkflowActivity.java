@@ -239,37 +239,6 @@ public class WorkflowActivity {
             .build();
     }
 
-        /**
-     * Handles the StartWorkflow S3A API Operation.
-     * Starts a Workflow
-     *
-     * @param request StartWorkflowRequest object
-     * @return StartWorkflowResponse object
-     */
-    public StartWorkflowResponse startManifestSplitWorkflow(final StartWorkflowRequest request) {
-        inputValidator.validateStartWorkflowRequest(request);
-        final String workflowName = escapeJava(request.getWorkflowName());
-        final String namespaceID = escapeJava(request.getNamespaceID());
-
-        log.info("Starting workflow with workflowName: {}, namespaceID: {}", workflowName, namespaceID);
-
-        try {
-            workflowManager.startWorkflow(request, WorkflowStateMachine.MANIFEST_SPLIT_STATE_MACHINE);
-        } catch (InvalidInputException | AWSServiceException  e) {
-            throw logAndRethrow(START_WORKFLOW_OPERATION, workflowName, namespaceID, e);
-        } catch (RuntimeException e) {
-            log.error("Unexpected error occurred while starting the workflow. workflowName: {}, namespaceID: {}",
-                workflowName,
-                namespaceID,
-                e);
-            throw new S3AInternalServiceException(e.getMessage(), e);
-        }
-
-        return StartWorkflowResponse
-            .builder()
-            .build();
-    }
-
     /**
      * Handles the GetWorkflow S3A API Operation.
      * Fetches the latest Workflow metadata and returns it to the caller

@@ -105,19 +105,6 @@ public class S3ReplicationConfiguratorTest {
     }
 
     @Test
-    public void testSetupBOPSJobWithManifest() {
-        when(s3BatchOperationsManager.setupBOPSJob(workflowModel, s3Client, s3ControlClient, workflowRepository, BOPS_ROLE))
-            .thenReturn(createJobResponse);
-
-        CreateJobResponse response = configurator.setupBOPSJobWithManifest(
-            workflowModel, s3Client, s3ControlClient, workflowRepository, BOPS_ROLE);
-
-        verify(s3BatchOperationsManager).setupBOPSJob(
-            workflowModel, s3Client, s3ControlClient, workflowRepository, BOPS_ROLE);
-        assert(response == createJobResponse);
-    }
-
-    @Test
     public void testBuildCrossAccountPutBucketPolicyRequest() {
         when(s3PolicyManager.buildCrossAccountPutBucketPolicyRequest(DEST_BUCKET_NAME, SOURCE_ACCOUNT, s3Client))
             .thenReturn(policyRequest);

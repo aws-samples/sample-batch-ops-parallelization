@@ -109,26 +109,6 @@ public class S3ReplicationConfigurator {
     }
 
     /**
-     * When S3 object manifest files are provided, this method will configure and start
-     * the BOPS jobs by reading the manifest filenames from the provided manifestLocation.
-     *
-     * @param workflow The workflow details containing the destination bucket ARN
-     * @param s3Client The S3Client for the source bucket
-     * @param s3Controlclient  The S3 Control client for the source bucket
-     * @param worflowRepository Used for DynamoDB persistance
-     * @param bopsRole The IAM role needed by the BOPS jobs to be able to do their work
-     * @return CreateJobResponse containing the response from the S3 service.
-     */
-    public CreateJobResponse setupBOPSJobWithManifest(final WorkFlowModel workflow,
-                                                      final S3Client s3Client,
-                                                      final S3ControlClient s3ControlClient,
-                                                      final WorkflowRepository workflowRepository,
-                                                      final String bopsRole) {
-        return s3BatchOperationsManager
-            .setupBOPSJob(workflow, s3Client, s3ControlClient, workflowRepository, bopsRole);
-    }
-
-    /**
      * Build cross account put bucket policy request.
      *
      * @param destBucketName Name of the destination bucket.

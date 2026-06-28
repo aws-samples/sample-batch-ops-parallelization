@@ -11,13 +11,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.S3Uri;
-import software.amazon.awssdk.services.s3.S3Utilities;
-import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
-import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
-import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3control.S3ControlClient;
 import software.amazon.awssdk.services.s3control.model.CreateJobRequest;
 import software.amazon.awssdk.services.s3control.model.CreateJobResponse;
@@ -25,11 +18,9 @@ import software.amazon.awssdk.services.s3control.model.RequestedJobStatus;
 import software.amazon.awssdk.services.s3control.model.S3ControlException;
 import software.amazon.awssdk.services.s3control.model.UpdateJobStatusRequest;
 
-import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -58,11 +49,7 @@ public class S3BatchOperationsManagerTest {
     @Mock
     private S3Client mockSourceS3Client;
 
-    @Mock
-    private S3Uri s3Uri;
 
-    @Mock
-    private S3Utilities s3Utilities;
 
     @Mock
     private WorkflowRepository workflowRepository;
@@ -85,146 +72,6 @@ public class S3BatchOperationsManagerTest {
         workflow.setSourceAccountNumber(SOURCE_ACCOUNT_NUMBER);
         workflow.setDestAccountNumber(DEST_ACCOUNT_NUMBER);
     }
-    @Test
-    public void testSetupBOPSJobWithManifest() {
-        // Arrange
-        workflow.setRuntimeConfig(RuntimeConfig.builder().manifestLocation("s://test-location/manifests").build());
-        workflow.setWorkflowName("A".repeat(100));
-        workflow.setSourceBucketARN("B".repeat(100));
-        workflow.setDestBucketARN("C".repeat(100));
-        CreateJobResponse createJobResponse = mock(CreateJobResponse.class);
-        when(s3ControlClient.createJob(any(CreateJobRequest.class))).thenReturn(createJobResponse);
-        ListObjectsV2Response listResponse = ListObjectsV2Response.builder()
-            .contents(S3Object.builder()
-                .key("test-manifest.csv")
-                .eTag("\"dummy-etag\"")
-                .build())
-            .isTruncated(false)
-            .build();
-        when(mockSourceS3Client.listObjectsV2(any(ListObjectsV2Request.class))).thenReturn(listResponse);
-
-        HeadObjectResponse headObjResponse = HeadObjectResponse.builder()
-            .eTag("\\")
-            .build();
-        when(mockSourceS3Client.headObject(any(HeadObjectRequest.class))).thenReturn(headObjResponse);
-
-        when(mockSourceS3Client.utilities()).thenReturn(s3Utilities);
-        when(s3Utilities.parseUri(URI.create(workflow.getRuntimeConfig().getManifestLocation()))).thenReturn(s3Uri);
-        when(s3Uri.bucket()).thenReturn(Optional.of("test-location"));
-        when(s3Uri.key()).thenReturn(Optional.of("manifests"));
-
-        // Act
-        s3BatchOperationsManager.setupBOPSJob(workflow, mockSourceS3Client,
-            s3ControlClient, workflowRepository, BOPS_ROLE);
-
-        // Assert
-        verify(s3ControlClient, times(2)).createJob(any(CreateJobRequest.class));
-    }
-
-    @Test
-    public void testSetupBOPSJobWithManifest_longDescription() {
-        // Arrange
-        workflow.setRuntimeConfig(RuntimeConfig.builder().manifestLocation("s://test-location/manifests").build());
-        CreateJobResponse createJobResponse = mock(CreateJobResponse.class);
-        when(s3ControlClient.createJob(any(CreateJobRequest.class))).thenReturn(createJobResponse);
-        ListObjectsV2Response listResponse = ListObjectsV2Response.builder()
-            .contents(S3Object.builder()
-                .key("test-manifest.csv")
-                .eTag("\"dummy-etag\"")
-                .build())
-            .isTruncated(false)
-            .build();
-        when(mockSourceS3Client.listObjectsV2(any(ListObjectsV2Request.class))).thenReturn(listResponse);
-
-        HeadObjectResponse headObjResponse = HeadObjectResponse.builder()
-            .eTag("\\")
-            .build();
-        when(mockSourceS3Client.headObject(any(HeadObjectRequest.class))).thenReturn(headObjResponse);
-
-        when(mockSourceS3Client.utilities()).thenReturn(s3Utilities);
-        when(s3Utilities.parseUri(URI.create(workflow.getRuntimeConfig().getManifestLocation()))).thenReturn(s3Uri);
-        when(s3Uri.bucket()).thenReturn(Optional.of("test-location"));
-        when(s3Uri.key()).thenReturn(Optional.of("manifests"));
-
-        // Act
-        s3BatchOperationsManager.setupBOPSJob(workflow, mockSourceS3Client,
-            s3ControlClient, workflowRepository, BOPS_ROLE);
-
-        // Assert
-        verify(s3ControlClient, times(2)).createJob(any(CreateJobRequest.class));
-    }
-
-    @Test
-    public void testSetupBOPSJobWithManifestThrowsS3ControlException() {
-        // Arrange: Mock AwsErrorDetails and S3Exception
-        workflow.setRuntimeConfig(RuntimeConfig.builder().manifestLocation("s://test-location/manifests").build());
-        AwsErrorDetails mockAwsErrorDetails = mock(AwsErrorDetails.class);
-        when(mockAwsErrorDetails.errorMessage()).thenReturn("S3 error occurred");
-        S3ControlException mockS3Exception = mock(S3ControlException.class);
-        when(mockS3Exception.awsErrorDetails()).thenReturn(mockAwsErrorDetails);
-        ListObjectsV2Response listResponse = ListObjectsV2Response.builder()
-            .contents(S3Object.builder()
-                .key("test-manifest.csv")
-                .eTag("\"dummy-etag\"")
-                .build())
-            .isTruncated(false)
-            .build();
-        when(mockSourceS3Client.listObjectsV2(any(ListObjectsV2Request.class))).thenReturn(listResponse);
-
-        HeadObjectResponse headObjResponse = HeadObjectResponse.builder()
-            .eTag("\\")
-            .build();
-        when(mockSourceS3Client.headObject(any(HeadObjectRequest.class))).thenReturn(headObjResponse);
-        when(mockSourceS3Client.utilities()).thenReturn(s3Utilities);
-        when(s3Utilities.parseUri(URI.create(workflow.getRuntimeConfig().getManifestLocation()))).thenReturn(s3Uri);
-        when(s3Uri.bucket()).thenReturn(Optional.of("test-location"));
-        when(s3Uri.key()).thenReturn(Optional.of("manifests"));
-        // Mock S3Client to throw S3Exception
-        when(s3ControlClient.createJob(any(CreateJobRequest.class)))
-            .thenThrow(mockS3Exception);
-        // Act & Assert: Expect RuntimeException to be thrown
-        RuntimeException thrown = assertThrows(RuntimeException.class, () ->
-            s3BatchOperationsManager.setupBOPSJob(workflow, mockSourceS3Client,
-                s3ControlClient, workflowRepository, BOPS_ROLE));
-
-        assertTrue(thrown.getMessage().contains("S3 error occurred"));
-    }
-
-    @Test
-    public void testSetupBOPSJobWithManifestThrowsNoCSVFound() {
-        // Arrange: Mock AwsErrorDetails and S3Exception
-        workflow.setRuntimeConfig(RuntimeConfig.builder().manifestLocation("s://test-location/manifests").build());
-        AwsErrorDetails mockAwsErrorDetails = mock(AwsErrorDetails.class);
-        when(mockAwsErrorDetails.errorMessage()).thenReturn("S3 error occurred");
-        S3ControlException mockS3Exception = mock(S3ControlException.class);
-        when(mockS3Exception.awsErrorDetails()).thenReturn(mockAwsErrorDetails);
-        ListObjectsV2Response listResponse = ListObjectsV2Response.builder()
-            .contents(S3Object.builder()
-                .key("test-manifest.txt")
-                .build())
-            .isTruncated(false)
-            .build();
-        when(mockSourceS3Client.listObjectsV2(any(ListObjectsV2Request.class))).thenReturn(listResponse);
-
-        HeadObjectResponse headObjResponse = HeadObjectResponse.builder()
-            .eTag("\\")
-            .build();
-        when(mockSourceS3Client.headObject(any(HeadObjectRequest.class))).thenReturn(headObjResponse);
-        when(mockSourceS3Client.utilities()).thenReturn(s3Utilities);
-        when(s3Utilities.parseUri(URI.create(workflow.getRuntimeConfig().getManifestLocation()))).thenReturn(s3Uri);
-        when(s3Uri.bucket()).thenReturn(Optional.of("test-location"));
-        when(s3Uri.key()).thenReturn(Optional.of("manifests"));
-        // Mock S3Client to throw S3Exception
-        when(s3ControlClient.createJob(any(CreateJobRequest.class)))
-            .thenThrow(mockS3Exception);
-        // Act & Assert: Expect RuntimeException to be thrown
-        RuntimeException thrown = assertThrows(RuntimeException.class, () ->
-            s3BatchOperationsManager.setupBOPSJob(workflow, mockSourceS3Client,
-                s3ControlClient, workflowRepository, BOPS_ROLE));
-
-        assertEquals("No CSV files found in manifest location", thrown.getMessage());
-    }
-
     @Test
     public void testSetupBOPSJob() {
         // Arrange
