@@ -23,8 +23,7 @@ import com.amazon.bopspar.service.resources.replication.rule.S3ReplicationRuleMa
 import com.amazon.bopspar.service.resources.s3.bucket.S3CreateBucketImpl;
 import com.amazon.bopspar.service.resources.s3.bucket.S3CreateBucketService;
 import com.amazon.bopspar.service.resources.s3.configuration.S3ConfigurationService;
-import com.amazon.bopspar.service.resources.s3.inventoryreportconfig.S3InventoryReportConfigService;
-import com.amazon.bopspar.service.resources.s3.inventoryreportconfig.S3ManifestSplitService;
+
 import com.amazon.bopspar.service.resources.workflow.WorkflowStatusManager;
 import com.amazon.bopspar.service.validator.InputValidator;
 import com.amazon.bopspar.service.validator.S3RequestValidator;
@@ -236,15 +235,4 @@ public class Module {
             .build();
     }
 
-    @Provides
-    @Singleton
-    public S3ManifestSplitService getS3ManifestSplitService() {
-        return new S3ManifestSplitService();
-    }
-
-    @Provides
-    @Singleton
-    public S3InventoryReportConfigService getInventoryReportConfigService() {
-        return new S3InventoryReportConfigService();
-    }
 }

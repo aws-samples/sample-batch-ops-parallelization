@@ -14,8 +14,7 @@ import com.amazon.bopspar.service.resources.replication.S3ReplicationConfigurato
 import com.amazon.bopspar.service.resources.s3.bucket.S3CreateBucketImpl;
 import com.amazon.bopspar.service.resources.s3.bucket.S3CreateBucketService;
 import com.amazon.bopspar.service.resources.s3.configuration.S3ConfigurationService;
-import com.amazon.bopspar.service.resources.s3.inventoryreportconfig.S3InventoryReportConfigService;
-import com.amazon.bopspar.service.resources.s3.inventoryreportconfig.S3ManifestSplitService;
+
 import com.amazon.bopspar.service.resources.workflow.WorkflowStatusManager;
 import com.google.gson.Gson;
 import dagger.Component;
@@ -54,10 +53,6 @@ public interface LambdaComponent {
     S3ConfigurationService getS3ConfigurationService();
 
     S3PostReplicationService getS3PostReplicationService();
-
-    S3ManifestSplitService getS3ManifestSplitService();
-
-    S3InventoryReportConfigService getS3InventoryReportConfigService();
 
     WorkflowActivity getWorkflowActivity();
 

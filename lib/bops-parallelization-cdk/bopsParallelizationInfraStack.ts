@@ -13,17 +13,13 @@ import {
   Pass,
   Wait,
   WaitTime,
-  Fail,
-  TaskInput,
-  IntegrationPattern,
   LogLevel
 } from 'aws-cdk-lib/aws-stepfunctions';
-import { LambdaInvoke, StepFunctionsStartExecution } from 'aws-cdk-lib/aws-stepfunctions-tasks';
+import { LambdaInvoke } from 'aws-cdk-lib/aws-stepfunctions-tasks';
 import { Function, Runtime, Code } from 'aws-cdk-lib/aws-lambda';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { Effect, Policy, PolicyStatement } from 'aws-cdk-lib/aws-iam';
-import { CfnOutput, Duration, Fn, RemovalPolicy } from 'aws-cdk-lib';
-import { Table } from 'aws-cdk-lib/aws-dynamodb';
+import { CfnOutput, Duration, RemovalPolicy } from 'aws-cdk-lib';
 import { WORKFLOW_TABLE_PROPS } from './persistence/constants';
 import {
   CONFIGURE_BUCKET_LAMBDA,
@@ -32,10 +28,6 @@ import {
   MONITOR_LAMBDA,
   POST_REPLICATION_LAMBDA,
   SETUP_ROLLBACK_LAMBDA,
-  INVENTORY_CONFIG_SETUP_LAMBDA,
-  MANIFEST_SPLIT_LAMBDA,
-  POLL_FOR_GLUE_JOB_LAMBDA,
-  POLL_FOR_INVENTORY_REPORT_MANIFEST_LAMBDA,
 } from './compute/constants';
 import { NagSuppressions } from 'cdk-nag';
 
@@ -57,7 +49,7 @@ export class BopsParallelizationInfraStack extends Stack {
       removalPolicy: RemovalPolicy.DESTROY
     });
 
-    const vpcFlowLog = new ec2.FlowLog(this, 'VpcFlowLog', {
+    new ec2.FlowLog(this, 'VpcFlowLog', {
       resourceType: ec2.FlowLogResourceType.fromVpc(vpc),
       destination: ec2.FlowLogDestination.toCloudWatchLogs(flowLogGroup),
       trafficType: ec2.FlowLogTrafficType.ALL
@@ -118,59 +110,6 @@ export class BopsParallelizationInfraStack extends Stack {
       dbResources: dynamoDBResources,
     });
 
-    // Inventory and manifest split Lambdas
-    const s3InventoryConfigSetupLambda = new LambdaResource(this, INVENTORY_CONFIG_SETUP_LAMBDA.lambdaName, {
-      componentName: INVENTORY_CONFIG_SETUP_LAMBDA.componentName,
-      functionName: INVENTORY_CONFIG_SETUP_LAMBDA.lambdaName,
-      handler: INVENTORY_CONFIG_SETUP_LAMBDA.handler,
-      roleName: `${INVENTORY_CONFIG_SETUP_LAMBDA.lambdaName}Role`,
-      vpc: vpc,
-      dbResources: dynamoDBResources,
-      env: {
-        AWS_ACCOUNT_ID: this.account,
-      },
-    });
-
-    const s3PollForInventoryReportManifestLambda = new LambdaResource(
-      this,
-      POLL_FOR_INVENTORY_REPORT_MANIFEST_LAMBDA.lambdaName,
-      {
-        componentName: POLL_FOR_INVENTORY_REPORT_MANIFEST_LAMBDA.componentName,
-        functionName: POLL_FOR_INVENTORY_REPORT_MANIFEST_LAMBDA.lambdaName,
-        handler: POLL_FOR_INVENTORY_REPORT_MANIFEST_LAMBDA.handler,
-        roleName: `${POLL_FOR_INVENTORY_REPORT_MANIFEST_LAMBDA.lambdaName}Role`,
-        vpc: vpc,
-        dbResources: dynamoDBResources,
-        env: {
-          AWS_ACCOUNT_ID: this.account,
-        },
-      },
-    );
-
-    const manifestSplitLambda = new LambdaResource(this, MANIFEST_SPLIT_LAMBDA.lambdaName, {
-      componentName: MANIFEST_SPLIT_LAMBDA.componentName,
-      functionName: MANIFEST_SPLIT_LAMBDA.lambdaName,
-      handler: MANIFEST_SPLIT_LAMBDA.handler,
-      roleName: `${MANIFEST_SPLIT_LAMBDA.lambdaName}Role`,
-      vpc: vpc,
-      dbResources: dynamoDBResources,
-      env: {
-        AWS_ACCOUNT_ID: this.account,
-      },
-    });
-
-    const s3PollForGlueJobLambda = new LambdaResource(this, POLL_FOR_GLUE_JOB_LAMBDA.lambdaName, {
-      componentName: POLL_FOR_GLUE_JOB_LAMBDA.componentName,
-      functionName: POLL_FOR_GLUE_JOB_LAMBDA.lambdaName,
-      handler: POLL_FOR_GLUE_JOB_LAMBDA.handler,
-      roleName: `${POLL_FOR_GLUE_JOB_LAMBDA.lambdaName}Role`,
-      vpc: vpc,
-      dbResources: dynamoDBResources,
-      env: {
-        AWS_ACCOUNT_ID: this.account,
-      },
-    });
-
     // 4. Create IAM policies
     const assumeRolePolicy = new Policy(this, 'AssumeRolePolicy', {
       policyName: 'assume-role-access',
@@ -202,9 +141,7 @@ export class BopsParallelizationInfraStack extends Stack {
 
     // Attach policies to Lambda roles
     [createS3BucketLambda, configureS3BucketLambda, s3MonitorLambda,
-      s3ReplicationSetupLambda, s3RollbackSetupLambda, s3PostReplicationLambda,
-      s3InventoryConfigSetupLambda, s3PollForInventoryReportManifestLambda,
-      manifestSplitLambda, s3PollForGlueJobLambda]
+      s3ReplicationSetupLambda, s3RollbackSetupLambda, s3PostReplicationLambda]
       .forEach(lambda => lambda.lambdaRole.attachInlinePolicy(assumeRolePolicy));
 
     s3MonitorLambda.lambdaRole.attachInlinePolicy(monitorPolicy);
@@ -309,168 +246,6 @@ export class BopsParallelizationInfraStack extends Stack {
       }
     });
 
-    // 7. Create Manifest Split Workflow
-    const s3CreateBucketTaskManifest = new LambdaInvoke(this, 'S3CreateBucketTaskManifest', {
-      stateName: 'S3CreateBucket',
-      lambdaFunction: createS3BucketLambda.lambdaFunction,
-      outputPath: '$.Payload'
-    });
-
-    const s3ConfigureBucketTaskManifest = new LambdaInvoke(this, 'S3ConfigureBucketTaskManifest', {
-      stateName: 'S3ConfigureBucket',
-      lambdaFunction: configureS3BucketLambda.lambdaFunction,
-      outputPath: '$.Payload'
-    });
-
-    const s3InventoryConfigSetupTask = new LambdaInvoke(this, 'S3InventoryConfigSetupTask', {
-      stateName: 'S3InventoryConfigSetup',
-      lambdaFunction: s3InventoryConfigSetupLambda.lambdaFunction,
-      outputPath: '$.Payload'
-    });
-
-    const s3PollManifestTask = new LambdaInvoke(this, 'S3PollManifestTask', {
-      stateName: 'S3PollManifest',
-      lambdaFunction: s3PollForInventoryReportManifestLambda.lambdaFunction,
-      outputPath: '$.Payload'
-    });
-
-    const s3ManifestSplitTask = new LambdaInvoke(this, 'S3ManifestSplitTask', {
-      stateName: 'S3ManifestSplit',
-      lambdaFunction: manifestSplitLambda.lambdaFunction,
-      outputPath: '$.Payload'
-    });
-
-    const s3PollGlueJobTask = new LambdaInvoke(this, 'S3PollGlueJobTask', {
-      stateName: 'S3PollGlueJob',
-      lambdaFunction: s3PollForGlueJobLambda.lambdaFunction,
-      outputPath: '$.Payload'
-    });
-
-    const workflowInvokeTask = new StepFunctionsStartExecution(this, "WorkflowInvokeTask", {
-      stateMachine: stateMachine,
-      associateWithParent: true,
-      integrationPattern: IntegrationPattern.REQUEST_RESPONSE,
-      input: TaskInput.fromObject({
-        startAt: "SetupReplication",
-        "workflowName.$": "$.workflowName",
-        "namespaceID.$": "$.namespaceID"
-      })
-    });
-
-    const waitForS3PollManifest = new Wait(this, 'WaitForS3PollManifest', {
-      stateName: 'WaitForS3PollManifest',
-      time: WaitTime.duration(Duration.minutes(1))
-    });
-
-    const waitForS3PollGlueJob = new Wait(this, 'WaitForS3PollGlueJob', {
-      stateName: 'WaitForS3PollGlueJob',
-      time: WaitTime.duration(Duration.minutes(1))
-    });
-
-    const inventoryConfigSetupChoice = new Choice(this, 'InventoryConfigSetupChoice', {
-      stateName: 'InventoryConfigSetupChoice'
-    });
-
-    const pollManifestChoice = new Choice(this, 'PollManifestChoice', {
-      stateName: 'PollManifestChoice'
-    });
-
-    const manifestSplitChoice = new Choice(this, 'ManifestSplitChoice', {
-      stateName: 'ManifestSplitChoice'
-    });
-
-    const pollGlueJobChoice = new Choice(this, 'PollGlueJobChoice', {
-      stateName: 'PollGlueJobChoice'
-    });
-
-    const createBucketChoiceManifest = new Choice(this, 'Check S3CreateBucket response Manifest');
-    const configureLambdaChoiceManifest = new Choice(this, 'Check ConfigureLambda response Manifest');
-
-    const failWorkflow = new Fail(this, "FailWorkflow", {
-      stateName: "FailWorkflow"
-    });
-
-    const closeWorkflowManifest = new Pass(this, 'CloseWorkflowManifest', {
-      stateName: 'CloseWorkflow'
-    });
-
-    const manifestWorkflowChain = Chain
-      .start(s3CreateBucketTaskManifest)
-      .next(createBucketChoiceManifest);
-
-    createBucketChoiceManifest
-      .when(Condition.stringEquals('$.status', 'CREATED'), s3ConfigureBucketTaskManifest)
-      .otherwise(closeWorkflowManifest);
-
-    s3ConfigureBucketTaskManifest
-      .next(configureLambdaChoiceManifest);
-
-    configureLambdaChoiceManifest
-      .when(Condition.stringEquals('$.status', 'FINISHED'), s3InventoryConfigSetupTask)
-      .otherwise(closeWorkflowManifest);
-
-    s3InventoryConfigSetupTask
-      .next(inventoryConfigSetupChoice);
-
-    inventoryConfigSetupChoice
-      .when(Condition.stringEquals('$.status', 'RUNNING'), s3PollManifestTask)
-      .when(Condition.stringEquals('$.status', 'FINISHED'), workflowInvokeTask)
-      .when(Condition.stringEquals('$.status', 'STOPPED'), closeWorkflowManifest)
-      .when(Condition.stringEquals('$.status', 'FAILED'), failWorkflow)
-      .otherwise(closeWorkflowManifest);
-
-    s3PollManifestTask
-      .next(pollManifestChoice);
-
-    pollManifestChoice
-      .when(Condition.stringEquals('$.status', 'RUNNING'), waitForS3PollManifest)
-      .when(Condition.stringEquals('$.status', 'FINISHED'), s3ManifestSplitTask)
-      .when(Condition.stringEquals('$.status', 'STOPPED'), closeWorkflowManifest)
-      .when(Condition.stringEquals('$.status', 'FAILED'), failWorkflow)
-      .otherwise(closeWorkflowManifest);
-
-    waitForS3PollManifest
-      .next(s3PollManifestTask);
-
-    s3ManifestSplitTask
-      .next(manifestSplitChoice);
-
-    manifestSplitChoice
-      .when(Condition.stringEquals('$.status', 'RUNNING'), s3PollGlueJobTask)
-      .when(Condition.stringEquals('$.status', 'STOPPED'), closeWorkflowManifest)
-      .when(Condition.stringEquals('$.status', 'FAILED'), failWorkflow)
-      .otherwise(closeWorkflowManifest);
-
-    s3PollGlueJobTask
-      .next(pollGlueJobChoice);
-
-    pollGlueJobChoice
-      .when(Condition.stringEquals('$.status', 'RUNNING'), waitForS3PollGlueJob)
-      .when(Condition.stringEquals('$.status', 'FINISHED'), workflowInvokeTask)
-      .when(Condition.stringEquals('$.status', 'STOPPED'), closeWorkflowManifest)
-      .when(Condition.stringEquals('$.status', 'FAILED'), failWorkflow)
-      .otherwise(closeWorkflowManifest);
-
-    waitForS3PollGlueJob
-      .next(s3PollGlueJobTask);
-
-    const manifestSplitWorkflowlogGroup = new LogGroup(this, 'ManifestSplitWorkflowLogGroup', {
-      retention: RetentionDays.ONE_WEEK,
-      removalPolicy: RemovalPolicy.DESTROY
-    });
-
-    const manifestSplitStateMachine = new StateMachine(this, 'ManifestSplitWorkflow', {
-      stateMachineName: "ManifestSplitWorkflow",
-      definitionBody: DefinitionBody.fromChainable(manifestWorkflowChain),
-      stateMachineType: StateMachineType.STANDARD,
-      tracingEnabled: true,
-      logs: {
-        destination: manifestSplitWorkflowlogGroup,
-        level: LogLevel.ALL,
-        includeExecutionData: true
-      }
-    });
-
     // 6. Create API Lambda
     const lambdaLogGroup = new LogGroup(this, 'LambdaLogGroup', {
       retention: RetentionDays.ONE_WEEK,
@@ -493,7 +268,6 @@ export class BopsParallelizationInfraStack extends Stack {
         DYNAMODB_TABLE_NAME: dynamoDbTable.tableName,
         DYNAMMODB_TABLE_ARN: dynamoDbTable.tableArn,
         WORKFLOW_STATE_MACHINE_ARN: stateMachine.stateMachineArn,
-        MANIFEST_SPLIT_STATE_MACHINE_ARN: manifestSplitStateMachine.stateMachineArn
       }
     });
 
@@ -504,7 +278,7 @@ export class BopsParallelizationInfraStack extends Stack {
       statements: [new PolicyStatement({
         effect: Effect.ALLOW,
         actions: ['states:SendTaskSuccess', 'states:StartExecution'],
-        resources: [stateMachine.stateMachineArn, manifestSplitStateMachine.stateMachineArn]
+        resources: [stateMachine.stateMachineArn]
       })]
     });
 
@@ -545,14 +319,6 @@ export class BopsParallelizationInfraStack extends Stack {
 
     // Suppress Step Functions wildcard permissions by path - needed for Lambda invocation
     NagSuppressions.addResourceSuppressionsByPath(this, '/BOPSParallelizationStack/S3AWorkflow/Role/DefaultPolicy/Resource', [
-      {
-        id: 'AwsSolutions-IAM5',
-        reason: 'Step Functions requires wildcard permissions on Lambda function ARNs to invoke different versions and aliases'
-      }
-    ]);
-
-    // Suppress Step Functions wildcard permissions for Manifest Split workflow by path
-    NagSuppressions.addResourceSuppressionsByPath(this, '/BOPSParallelizationStack/ManifestSplitWorkflow/Role/DefaultPolicy/Resource', [
       {
         id: 'AwsSolutions-IAM5',
         reason: 'Step Functions requires wildcard permissions on Lambda function ARNs to invoke different versions and aliases'

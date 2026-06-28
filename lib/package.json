@@ -30,6 +30,8 @@
     "handlebars": "4.7.9",
     "diff": "4.0.4",
     "picomatch": "4.0.4",
-    "fast-uri": "3.1.2"
+    "fast-uri": "3.1.2",
+    "js-yaml": "4.1.0",
+    "@babel/core": "^7.26.10"
   }
 }

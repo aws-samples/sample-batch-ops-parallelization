@@ -42,27 +42,3 @@ export enum WAIT_FOR_CUSTOMER_ACK_LAMBDA {
   lambdaName = 'WaitForCustomerAckLambda',
   handler = 'com.amazon.bopspar.service.lambda.WaitForCustomerAckLambda::handleRequest',
 }
-
-export enum MANIFEST_SPLIT_LAMBDA {
-  componentName = 'S3ManifestSplit',
-  lambdaName = 'S3ManifestSplitLambda',
-  handler = 'com.amazon.bopspar.service.lambda.S3ManifestSplitLambda::handleRequest',
-}
-
-export enum POLL_FOR_GLUE_JOB_LAMBDA {
-  componentName = 'S3PollManifest',
-  lambdaName = 'S3PollGlueJobLambda',
-  handler = 'com.amazon.bopspar.service.lambda.S3PollGlueJobLambda::handleRequest',
-}
-
-export enum POLL_FOR_INVENTORY_REPORT_MANIFEST_LAMBDA {
-  componentName = 'S3PollManifest',
-  lambdaName = 'S3PollManifestLambda',
-  handler = 'com.amazon.bopspar.service.lambda.S3PollManifestLambda::handleRequest',
-}
-
-export enum INVENTORY_CONFIG_SETUP_LAMBDA {
-  componentName = 'S3InventoryConfigSetup',
-  lambdaName = 'S3InventoryConfigSetupLambda',
-  handler = 'com.amazon.bopspar.service.lambda.S3InventoryConfigSetupLambda::handleRequest',
-}

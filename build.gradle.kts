@@ -86,8 +86,6 @@ dependencies {
     implementation("software.amazon.awssdk:aws-core")
     // arn
     implementation("software.amazon.awssdk:arns")
-
-    // s3 control
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:s3control")
 
@@ -125,10 +123,9 @@ dependencies {
 
 configurations.all {
     resolutionStrategy {
-        force("com.fasterxml.jackson.core:jackson-core:2.18.3")
-        force("com.fasterxml.jackson.core:jackson-databind:2.18.3")
-        force("com.fasterxml.jackson.core:jackson-annotations:2.18.3")
-
+        force("com.fasterxml.jackson.core:jackson-core:2.18.4")
+        force("com.fasterxml.jackson.core:jackson-databind:2.18.4")
+        force("com.fasterxml.jackson.core:jackson-annotations:2.18.4")
         force("io.netty:netty-codec:4.1.133.Final")
         force("io.netty:netty-codec-http:4.1.133.Final")
         force("io.netty:netty-codec-http2:4.1.133.Final")
@@ -142,6 +139,9 @@ configurations.all {
         force("software.amazon.ion:ion-java:1.11.9")
 
         force("com.google.guava:guava:33.4.0-jre")
+
+        // Pin commons-codec to patched version (CVE-177835 affects <1.13)
+        force("commons-codec:commons-codec:1.17.1")
 
         force("org.eclipse.jetty:jetty-http:12.0.33")
         force("org.eclipse.jetty:jetty-server:12.0.33")

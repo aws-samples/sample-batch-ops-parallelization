@@ -185,9 +185,6 @@ purge_buckets_by_prefix "src-test-bopspar-${ACCOUNT}"
 # Manifest buckets written to by Lambdas and S3 Batch Ops
 purge_buckets_by_prefix "manifest"
 
-# Inventory/migration report buckets
-purge_buckets_by_prefix "s3a-migration-reports-bucket"
-
 # Server-access-logging buckets
 purge_buckets_by_prefix "server-access-logging"
 

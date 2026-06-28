@@ -18,10 +18,6 @@ public class RuntimeConfig implements Serializable {
     private String manifestLocation;
     private boolean skipBucketOwnershipValidationAndCopy;
     private boolean isReplicationTimeControlEnabled;
-    private String inventoryReportBucketArn;
-    private String inventoryReportManifestLocation;
-    private String inventoryReportGlueJobRunId;
-    private String inventoryReportConfigStartedAt;
 
     public com.amazon.bopspar.model.RuntimeConfig toSmithyModel() {
         return com.amazon.bopspar.model.RuntimeConfig.builder()

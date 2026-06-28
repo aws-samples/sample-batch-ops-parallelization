@@ -102,24 +102,14 @@ public class S3ReplicationSetupLambda implements RequestHandler<WorkflowRequest,
             addCrossAccountPolicyIfNeeded(workflowDetails, destS3Client);
             //3. Setup CRR Rule on the Source Bucket
             replicationConfigurator.setupLiveReplication(workflowDetails, sourceS3Client, destS3Client, bopsRole);
-            //4. Create Configure and start Batch Operation(BOPS) and update DDB with record
-
-            //3. If source Account and Dest account are different we
-            // update the KMS Key policy when buckets are using KMS encryption
-            if (!workflowDetails.getSourceAccountNumber().equals(workflowDetails.getDestAccountNumber()))
-            {
+            //4. If source Account and Dest account are different, update the KMS Key policy
+            // when buckets are using KMS encryption
+            if (!workflowDetails.getSourceAccountNumber().equals(workflowDetails.getDestAccountNumber())) {
                 replicationConfigurator.updateDestKeyPolicyIfBucketIsKmsEncrypted(workflowDetails,
                         destS3Client, destKmsClient);
             }
-
-            //3. Create Configure and start Batch Operation(BOPS) and update DDB with record
-            if (workflowDetails.getRuntimeConfig() == null
-                    || isNullOrEmpty(workflowDetails.getRuntimeConfig().getManifestLocation())) {
-                replicationConfigurator.setupBOPSJob(workflowDetails, s3ControlClient, workflowRepository, bopsRole);
-            } else {
-                replicationConfigurator.setupBOPSJobWithManifest(workflowDetails, sourceS3Client, s3ControlClient,
-                    workflowRepository, bopsRole);
-            }
+            //5. Create, configure and start Batch Operation (BOPS) and update DDB with record
+            replicationConfigurator.setupBOPSJob(workflowDetails, s3ControlClient, workflowRepository, bopsRole);
 
             workflowRepository.updateWorkflow(workflowDetails);
 
