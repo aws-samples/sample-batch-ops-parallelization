@@ -30,9 +30,14 @@ const iamStack = new S3AResourcesIAMStack(app, 'BOPSParallelizationIAMStack', {
 
 // Deploy the Glue stack that defines the manifest-split-glue-job. It uses the
 // Glue role created by the IAM stack and deploys to the same region as everything else.
+// rowLimit (max rows per output manifest file) is read from CDK context so it can be
+// configured per deployment via cdk.json or `-c rowLimit=...`; GlueStack defaults it to
+// 5B and clamps it to the supported 1B-5B range.
+const rowLimitContext = app.node.tryGetContext('rowLimit');
 const glueStack = new GlueStack(app, 'BOPSParallelizationGlueStack', {
   env,
-  glueJobRole: iamStack.glueJobRole
+  glueJobRole: iamStack.glueJobRole,
+  ...(rowLimitContext !== undefined ? { rowLimit: Number(rowLimitContext) } : {})
 });
 glueStack.addDependency(iamStack);
 
