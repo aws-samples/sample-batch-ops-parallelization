@@ -15,12 +15,16 @@ import json
 import hashlib
 import logging
 
-#arguments
-args = getResolvedOptions(sys.argv, ['workflow_name', 'workflow_namespace_id', 'inventory_bucket', 'inventory_report_manifest_location'])
-
 #logging
 logging.basicConfig(level=logging.INFO)
 logger = logger = logging.getLogger(__name__)
+
+# row_limit is optional so it is resolved separately to keep getResolvedOptions from failing when it is absent
+optional_args = ['row_limit'] if '--row_limit' in sys.argv else []
+args = getResolvedOptions(
+    sys.argv,
+    ['workflow_name', 'workflow_namespace_id', 'inventory_bucket', 'inventory_report_manifest_location'] + optional_args
+)
 
 inventory_bucket = args['inventory_bucket']
 workflow_name = args['workflow_name']
@@ -29,8 +33,32 @@ workflow_namespace_id = args['workflow_namespace_id']
 destination_bucket_prefix = f"s3a://{inventory_bucket}/split_output/"
 inventory_report_manifest_location = args['inventory_report_manifest_location']
 
-# ROW_LIMIT is the approximate max number of rows that should be included in one single output CSV file
-ROW_LIMIT = 1_000_000_000
+# ROW_LIMIT is the approximate max number of rows that should be included in one single output CSV file.
+# It is supplied at deploy time via the CDK Glue job config (--row_limit) and defaults to 5 billion.
+# The value is clamped to the supported 1 billion - 5 billion range to guard against misconfiguration.
+ROW_LIMIT_DEFAULT = 5_000_000_000
+ROW_LIMIT_MIN = 1_000_000_000
+ROW_LIMIT_MAX = 5_000_000_000
+
+
+def resolve_row_limit(raw_value):
+    """Parse and clamp the configured row limit to the supported 1B-5B range."""
+    if raw_value is None:
+        return ROW_LIMIT_DEFAULT
+    try:
+        parsed = int(raw_value)
+    except (TypeError, ValueError):
+        logger.warning(f"Invalid row_limit '{raw_value}', falling back to default {ROW_LIMIT_DEFAULT}")
+        return ROW_LIMIT_DEFAULT
+    clamped = max(ROW_LIMIT_MIN, min(parsed, ROW_LIMIT_MAX))
+    if clamped != parsed:
+        logger.warning(f"row_limit {parsed} outside supported range "
+                       f"[{ROW_LIMIT_MIN}, {ROW_LIMIT_MAX}], clamped to {clamped}")
+    return clamped
+
+
+ROW_LIMIT = resolve_row_limit(args.get('row_limit'))
+logger.info(f"Using ROW_LIMIT={ROW_LIMIT}")
 
 # WRITE_THRESHOLD is the number of rows to store in memory until starting write and unpersisting data
 WRITE_THRESHOLD = 5_000_000_000
