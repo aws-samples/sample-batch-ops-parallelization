@@ -2,6 +2,7 @@ import { Role } from 'aws-cdk-lib/aws-iam';
 import { CfnJob } from 'aws-cdk-lib/aws-glue';
 import { aws_s3_assets, Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
+import { NagSuppressions } from 'cdk-nag';
 
 export interface GlueStackProps extends StackProps {
   glueJobRole: Role;
@@ -63,5 +64,17 @@ export class GlueStack extends Stack {
     });
 
     etlScript.grantRead(this.glueJobRole);
+
+    NagSuppressions.addResourceSuppressions(glueJob, [
+      {
+        id: 'AwsSolutions-GL1',
+        reason: 'Manifest-split job logs contain only S3 object keys/counts, not sensitive data; '
+          + 'CloudWatch log encryption is not required for this internal migration tooling.'
+      },
+      {
+        id: 'AwsSolutions-GL3',
+        reason: 'The manifest-split job does not use job bookmarks, so bookmark encryption is not applicable.'
+      }
+    ]);
   }
 }

@@ -66,7 +66,11 @@ WRITE_THRESHOLD = 5_000_000_000
 # How many files to read in at a time
 FILE_CHUNK_SIZE = 50
 
-dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
+# Derive the region from the Glue job's own execution environment so DynamoDB
+# follows wherever the stack (and the S3A_WORKFLOWS table) is deployed, instead
+# of being pinned to a single region.
+region_name = boto3.session.Session().region_name
+dynamodb = boto3.resource('dynamodb', region_name=region_name)
 s3_client = boto3.client('s3')
 
 def update_dynamodb_job_state(wf_name, namespace_id, manifest_location, state='FINISHED'):
