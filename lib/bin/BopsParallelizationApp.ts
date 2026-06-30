@@ -4,7 +4,7 @@ import { BopsParallelizationInfraStack } from '../bops-parallelization-cdk/bopsP
 import { S3AResourcesIAMStack } from '../bops-parallelization-cdk/iam/iamStack';
 import { GlueStack } from '../bops-parallelization-cdk/glue/glueStack';
 import { Aspects } from "aws-cdk-lib";
-import { AwsSolutionsChecks, NagReportFormat } from "cdk-nag";
+import { AwsSolutionsChecks, NagReportFormat, NagSuppressions } from "cdk-nag";
 
 const app = new cdk.App();
 
@@ -40,6 +40,29 @@ const glueStack = new GlueStack(app, 'BOPSParallelizationGlueStack', {
   ...(rowLimitContext !== undefined ? { rowLimit: Number(rowLimitContext) } : {})
 });
 glueStack.addDependency(iamStack);
+
+// Suppress wildcard read/list permissions on the Glue role's DefaultPolicy. These are added by
+// GlueStack's etlScript.grantRead(), scoped to the CDK asset bucket, so the job can download its
+// ETL script. Applied here (not in the IAM stack) because the DefaultPolicy is created cross-stack
+// by GlueStack and does not exist until after GlueStack is instantiated.
+NagSuppressions.addResourceSuppressionsByPath(
+  iamStack,
+  '/BOPSParallelizationIAMStack/S3ACrossAccountGlueJobRole/DefaultPolicy/Resource',
+  [
+    {
+      id: 'AwsSolutions-IAM5',
+      reason: 'Glue job reads its ETL script from the CDK asset bucket; grantRead() emits wildcard '
+        + 'read/list actions scoped to that bucket, which is required for the job to download the script',
+      appliesTo: [
+        'Action::s3:GetBucket*',
+        'Action::s3:GetObject*',
+        'Action::s3:List*',
+        // Account/region-agnostic match for the CDK asset bucket ARN.
+        { regex: '/^Resource::arn:aws:s3:::cdk-[a-z0-9]+-assets-\\d{12}-[a-z0-9-]+\\/\\*$/g' }
+      ]
+    }
+  ]
+);
 
 Aspects.of(bopsParallelizationApp).add(new AwsSolutionsChecks({
   verbose: true,
