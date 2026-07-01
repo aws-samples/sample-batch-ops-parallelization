@@ -17,6 +17,7 @@ set -e
 
 STACK_NAME="BOPSParallelizationStack"
 IAM_STACK_NAME="BOPSParallelizationIAMStack"
+GLUE_STACK_NAME="BOPSParallelizationGlueStack"
 DYNAMODB_TABLE="S3A_WORKFLOWS"
 AWS_PROFILE="${AWS_PROFILE:-default}"
 REGION="${AWS_DEFAULT_REGION:-us-west-2}"
@@ -220,9 +221,14 @@ log "=== Step 3: Destroying CDK stacks ==="
 cd "$(dirname "$0")/lib"
 
 if $DRY_RUN; then
-  warn "[DRY RUN] Would run: cdk destroy ${IAM_STACK_NAME} --force && cdk destroy ${STACK_NAME} --force"
+  warn "[DRY RUN] Would run: cdk destroy ${GLUE_STACK_NAME} --force && cdk destroy ${IAM_STACK_NAME} --force && cdk destroy ${STACK_NAME} --force"
   cd - >/dev/null
 else
+  # Destroy the Glue stack first: it depends on the Glue role from the IAM stack,
+  # so it must be torn down before the IAM stack.
+  log "Destroying ${GLUE_STACK_NAME}..."
+  cdk destroy "$GLUE_STACK_NAME" --force && success "${GLUE_STACK_NAME} destroyed."
+
   log "Destroying ${IAM_STACK_NAME}..."
   cdk destroy "$IAM_STACK_NAME" --force && success "${IAM_STACK_NAME} destroyed."
 
