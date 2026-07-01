@@ -6,6 +6,7 @@ set -e
 # Variables
 STACK_NAME="BOPSParallelizationStack"
 IAM_STACK_NAME="BOPSParallelizationIAMStack"
+GLUE_STACK_NAME="BOPSParallelizationGlueStack"
 AWS_PROFILE="${AWS_PROFILE:-default}"  # Use specified AWS_PROFILE or default
 
 # Colors for output
@@ -57,6 +58,10 @@ cdk deploy ${STACK_NAME} --require-approval never
 # Deploy the stack
 echo -e "${YELLOW}Deploying ${IAM_STACK_NAME}...${NC}"
 cdk deploy ${IAM_STACK_NAME} --require-approval never
+
+# Deploy the Glue stack (depends on the Glue role from the IAM stack)
+echo -e "${YELLOW}Deploying ${GLUE_STACK_NAME}...${NC}"
+cdk deploy ${GLUE_STACK_NAME} --require-approval never
 
 # Check if deployment was successful
 if [ $? -eq 0 ]; then

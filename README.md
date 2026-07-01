@@ -27,6 +27,8 @@ sh ./deploy.sh
 
 ```
 
+> **Note:** The manifest-split Glue job's `ROW_LIMIT` (approximate max rows per output manifest file) is configurable per deployment via the `rowLimit` value in `cdk.json`. It defaults to `5000000000` and is clamped to the supported `1000000000`–`5000000000` range. To change it, edit `rowLimit` in `cdk.json` and re-run `deploy.sh`.
+
 ## Step 3. Run a migration
 
 Find the lambda function called "BOPSParallelMainHandler" and modify and add the following to the test:

@@ -2,30 +2,67 @@
 import * as cdk from 'aws-cdk-lib';
 import { BopsParallelizationInfraStack } from '../bops-parallelization-cdk/bopsParallelizationInfraStack';
 import { S3AResourcesIAMStack } from '../bops-parallelization-cdk/iam/iamStack';
+import { GlueStack } from '../bops-parallelization-cdk/glue/glueStack';
 import { Aspects } from "aws-cdk-lib";
-import { AwsSolutionsChecks, NagReportFormat } from "cdk-nag";
+import { AwsSolutionsChecks, NagReportFormat, NagSuppressions } from "cdk-nag";
 
 const app = new cdk.App();
 
+// Shared environment so every stack deploys to the same account/region.
+const env = {
+  account: process.env.CDK_DEFAULT_ACCOUNT,
+  region: process.env.CDK_DEFAULT_REGION
+};
+
 const bopsParallelizationApp = new BopsParallelizationInfraStack(app, 'BOPSParallelizationStack', {
-  env: {
-    account: process.env.CDK_DEFAULT_ACCOUNT,
-    region: process.env.CDK_DEFAULT_REGION
-  }
+  env
 });
 
 // Deploy the IAM stack with the required Lambda role ARNs
 const iamStack = new S3AResourcesIAMStack(app, 'BOPSParallelizationIAMStack', {
-  env: {
-    account: process.env.CDK_DEFAULT_ACCOUNT,
-    region: process.env.CDK_DEFAULT_REGION
-  },
+  env,
   // These will be the Lambda role ARNs from the main stack
   manifestlambdaRoleArn: `arn:aws:iam::${process.env.CDK_DEFAULT_ACCOUNT}:role/S3ManifestSplitLambdaRole`,
   pollForGlueJobLambdaRoleArn: `arn:aws:iam::${process.env.CDK_DEFAULT_ACCOUNT}:role/S3PollGlueJobLambdaRole`,
   pollForInventoryReportManifestLambdaRoleArn: `arn:aws:iam::${process.env.CDK_DEFAULT_ACCOUNT}:role/S3PollManifestLambdaRole`,
   inventoryConfigLambdaArn: `arn:aws:iam::${process.env.CDK_DEFAULT_ACCOUNT}:role/S3InventoryConfigSetupLambdaRole`
 });
+
+// Deploy the Glue stack that defines the manifest-split-glue-job. It uses the
+// Glue role created by the IAM stack and deploys to the same region as everything else.
+// rowLimit (max rows per output manifest file) is read from CDK context so it can be
+// configured per deployment via cdk.json or `-c rowLimit=...`; GlueStack defaults it to
+// 5B and clamps it to the supported 1B-5B range.
+const rowLimitContext = app.node.tryGetContext('rowLimit');
+const glueStack = new GlueStack(app, 'BOPSParallelizationGlueStack', {
+  env,
+  glueJobRole: iamStack.glueJobRole,
+  ...(rowLimitContext !== undefined ? { rowLimit: Number(rowLimitContext) } : {})
+});
+glueStack.addDependency(iamStack);
+
+// Suppress wildcard read/list permissions on the Glue role's DefaultPolicy. These are added by
+// GlueStack's etlScript.grantRead(), scoped to the CDK asset bucket, so the job can download its
+// ETL script. Applied here (not in the IAM stack) because the DefaultPolicy is created cross-stack
+// by GlueStack and does not exist until after GlueStack is instantiated.
+NagSuppressions.addResourceSuppressionsByPath(
+  iamStack,
+  '/BOPSParallelizationIAMStack/S3ACrossAccountGlueJobRole/DefaultPolicy/Resource',
+  [
+    {
+      id: 'AwsSolutions-IAM5',
+      reason: 'Glue job reads its ETL script from the CDK asset bucket; grantRead() emits wildcard '
+        + 'read/list actions scoped to that bucket, which is required for the job to download the script',
+      appliesTo: [
+        'Action::s3:GetBucket*',
+        'Action::s3:GetObject*',
+        'Action::s3:List*',
+        // Account/region-agnostic match for the CDK asset bucket ARN.
+        { regex: '/^Resource::arn:aws:s3:::cdk-[a-z0-9]+-assets-\\d{12}-[a-z0-9-]+\\/\\*$/g' }
+      ]
+    }
+  ]
+);
 
 Aspects.of(bopsParallelizationApp).add(new AwsSolutionsChecks({
   verbose: true,
@@ -34,6 +71,12 @@ Aspects.of(bopsParallelizationApp).add(new AwsSolutionsChecks({
 }));
 
 Aspects.of(iamStack).add(new AwsSolutionsChecks({
+  verbose: true,
+  reports: true,
+  reportFormats: [NagReportFormat.CSV]
+}));
+
+Aspects.of(glueStack).add(new AwsSolutionsChecks({
   verbose: true,
   reports: true,
   reportFormats: [NagReportFormat.CSV]

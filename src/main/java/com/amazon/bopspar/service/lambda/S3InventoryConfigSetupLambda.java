@@ -42,7 +42,7 @@ public class S3InventoryConfigSetupLambda implements RequestHandler<WorkflowRequ
 
     private static final Logger LOGGER = LogManager.getLogger(S3InventoryConfigSetupLambda.class);
     private static final String S3_INVENTORY_REPORTS_BUCKET_NAME_PREFIX = "s3a-migration-reports-bucket";
-    private static final long ONE_BILLION = 1_000_000_000L;
+    private static final long OBJECT_COUNT_THRESHOLD = 20_000_000_000L;
     private static final String INVENTORY_REPORT_CONFIG_SETUP_ROLE_NAME = "s3a-inventory-report-permissions";
     private static final String CLOUDWATCH_ROLE_NAME = "s3a-cloudwatch-permissions";
     private static final String S3A_GLUE_JOB_ROLE_NAME = "s3a-cross-account-glue-job-role";
@@ -75,9 +75,9 @@ public class S3InventoryConfigSetupLambda implements RequestHandler<WorkflowRequ
      *  Handles creation of S3 inventory report config for customer source bucket
      *  First it will check the number of objects in the source bucket using CloudWatch.
      *  Then we have 2 scenarios:
-     *  1) If the number of objects is less than 1 billion than we return FINISHED status to the Workflow workflow
+     *  1) If the number of objects is less than 20 billion than we return FINISHED status to the Workflow workflow
      *  and continue to the normal workflow.
-     *  2) If the number of objects is more than 1 billion,then we create the inventory reports bucket and attach
+     *  2) If the number of objects is 20 billion or more,then we create the inventory reports bucket and attach
      *  the bucket policy to the bucket for the inventory report config and the glue job role.
      *  Then we return RUNNING status to the Workflow workflow.
      * @param workflowRequest Contains workflow name and namespaceID
@@ -118,7 +118,7 @@ public class S3InventoryConfigSetupLambda implements RequestHandler<WorkflowRequ
             final long numberOfObjectsInSourceBucket = s3InventoryReportConfigService
                     .getNumberOfObjectsForBucketViaCloudWatch(sourceRegionCloudWatchClient, sourceBucketArn);
 
-            if (numberOfObjectsInSourceBucket < ONE_BILLION) {
+            if (numberOfObjectsInSourceBucket < OBJECT_COUNT_THRESHOLD) {
                 return WorkflowResponseBuilder.buildSuccessResponse(workflowDetails, WorkflowStatus.FINISHED);
             }
 

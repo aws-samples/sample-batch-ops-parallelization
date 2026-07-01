@@ -409,6 +409,9 @@ export class S3AResourcesIAMStack extends Stack {
                 appliesTo: ['Policy::arn:<AWS::Partition>:iam::aws:policy/service-role/AWSGlueServiceRole']
             }
         ]);
+        // NOTE: The Glue role's DefaultPolicy (created cross-stack by GlueStack's etlScript.grantRead())
+        // does not exist yet at this point, so its IAM5 suppression is applied in BopsParallelizationApp.ts
+        // after GlueStack is instantiated.
 
         // Suppress cross-account S3 policy wildcards - needed for cross-account operations
         NagSuppressions.addResourceSuppressions(crossAccountS3Policy, [
